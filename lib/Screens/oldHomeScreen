@@ -1,0 +1,284 @@
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:rail_sahayak/Screens/TrainTimingsScreen.dart';
+import 'package:rail_sahayak/Screens/amenities.dart';
+import 'package:rail_sahayak/Screens/book_coolie.dart';
+import 'package:rail_sahayak/Screens/login_screen.dart';
+import 'package:rail_sahayak/Screens/on_duty_staff_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String selectedStation = 'Select Station';
+  final List<String> stations = ['Raipur', 'Durg'];
+  void _bookTrain() async {
+    final Uri url = Uri.parse('https://www.irctc.co.in/nget/train-search');
+    if (!await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication,
+    )) {
+      // This runs if launch fails
+      debugPrint("Could not launch IRCTC");
+    }
+  }
+
+  void _bookRetiringRoom() async {
+    final Uri url = Uri.parse('https://www.rr.irctc.co.in/home');
+    if (!await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication,
+    )) {
+      // This runs if launch fails
+      debugPrint("Could not launch IRCTC");
+    }
+  }
+
+  void _trainRunningInfo() async {
+    final Uri url = Uri.parse('https://enquiry.indianrail.gov.in/mntes/');
+    if (!await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication,
+    )) {
+      // This runs if launch fails
+      debugPrint("Could not launch IRCTC");
+    }
+  }
+
+  void _passengerAmenities() async {
+    if (selectedStation != 'Select Station') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AmenitiesScreen(stationName: selectedStation),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a station first")),
+      );
+    }
+
+    // final Uri url = Uri.parse(
+    //     'https://studio--secr-station-guide.us-central1.hosted.app/station/urkura');
+    // if (!await launchUrl(
+    //   url,
+    //   mode: LaunchMode.externalApplication,
+    // )) {
+    //   // This runs if launch fails
+    //   debugPrint("Could not launch IRCTC");
+    // }
+  }
+
+  void _trainTimings() async {
+    if (selectedStation != 'Select Station') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TrainTimingsScreen(stationName: selectedStation),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a station first")),
+      );
+    }
+  }
+
+  void _ondutystaff() async {
+    if (selectedStation != 'Select Station') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OnDutyStaffScreen(stationName: selectedStation),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a station first")),
+      );
+    }
+  }
+
+  Widget buildTab(String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.redAccent),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade200,
+              blurRadius: 4,
+              offset: const Offset(2, 2),
+            ),
+          ],
+        ),
+        width: 140,
+        child: Center(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                color: Colors.redAccent,
+              ),
+              child: const Text(
+                'RailSahayak Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => LoginPage()),
+                  (route) => false,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('RailSahayak'),
+        backgroundColor: Colors.redAccent,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ListView(
+          children: [
+            DropdownButton<String>(
+              value:
+                  selectedStation == 'Select Station' ? null : selectedStation,
+              hint: const Text('Select Station'),
+              isExpanded: true,
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    selectedStation = newValue;
+                  });
+                }
+              },
+              items: stations.map<DropdownMenuItem<String>>((String station) {
+                return DropdownMenuItem<String>(
+                  value: station,
+                  child: Text(station),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Services at your station",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 100,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  buildTab("Book a Sahayak", () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => BookCoolie()));
+                  }),
+                  buildTab("Book a Wheelchair Divvying", () {
+                    // Navigate
+                  }),
+                  buildTab("Book a WheelCart", () {
+                    // Navigate
+                  }),
+                  buildTab("Book Baby Food", () {}),
+                  buildTab("Shop and Dine", () {}),
+                  buildTab("Book a Meal", () {}),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Station Guide",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 100,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  buildTab("Passenger Amenities", _passengerAmenities),
+                  buildTab("On Staff Duty", _ondutystaff),
+                  buildTab("Passenger Guide Map", () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Comming Soon')),
+                    );
+                    return;
+                  }),
+                  buildTab("Train Time Table", _trainTimings),
+                  buildTab("Other Info", () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Comming Soon')),
+                    );
+                    return;
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Travel Services",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 100,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  buildTab("Book Train Ticket", _bookTrain),
+                  buildTab("Train Retiring Room", _bookRetiringRoom),
+                  buildTab("Train Running Info", _trainRunningInfo),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

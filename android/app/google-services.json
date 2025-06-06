@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "612894814147",
+    "project_id": "railsahayak-1f4ec",
+    "storage_bucket": "railsahayak-1f4ec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:612894814147:android:ca003ca3664115da921776",
+        "android_client_info": {
+          "package_name": "com.example.coolie_user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJO2j4g7k1l0enbYaaIEInEECYkXc5PSU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:612894814147:android:ee1c35d312f69390921776",
+        "android_client_info": {
+          "package_name": "com.example.rail_sahayak"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJO2j4g7k1l0enbYaaIEInEECYkXc5PSU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:612894814147:android:e4db43bdabb49725921776",
+        "android_client_info": {
+          "package_name": "com.example.rail_sahayak_user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJO2j4g7k1l0enbYaaIEInEECYkXc5PSU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
