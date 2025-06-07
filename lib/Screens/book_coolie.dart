@@ -6,7 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class BookCoolie extends StatefulWidget {
-  const BookCoolie({super.key});
+  final String? selectedStation;
+
+  const BookCoolie({super.key, this.selectedStation});
 
   @override
   State<BookCoolie> createState() => _BookCoolieState();
@@ -32,6 +34,13 @@ class _BookCoolieState extends State<BookCoolie> {
 
   // Add a map to store active timers for coolies
   final Map<String, Timer> _coolieTimers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with the station passed from HomeScreen
+    _selectedStation = widget.selectedStation;
+  }
 
   @override
   void dispose() {
@@ -555,24 +564,6 @@ class _BookCoolieState extends State<BookCoolie> {
             ),
           ),
         ),
-
-        // PREVIOUS APP BAR STYLE - Kept for reference
-        // This was the original style before matching with wheelchair page
-        /*
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: const BackButton(color: Colors.black),
-        title: const Text(
-          'Book a Sahayak',
-          style: TextStyle(
-            color: Colors.redAccent,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
-        centerTitle: true,
-        */
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -602,28 +593,35 @@ class _BookCoolieState extends State<BookCoolie> {
             ),
             const SizedBox(height: 16),
 
-            DropdownButtonFormField<String>(
-              value: _selectedStation,
-              decoration: InputDecoration(
-                border: borderStyle,
-                enabledBorder: borderStyle,
-                focusedBorder: borderStyle,
-                labelText: 'Select Station *',
+            // Display selected station instead of dropdown
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade400),
+                borderRadius: BorderRadius.circular(10),
               ),
-              items: _stations
-                  .map(
-                    (station) =>
-                        DropdownMenuItem(value: station, child: Text(station)),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedStation = value;
-                  // Reset pickup and drop points when station changes
-                  _pickupPoint = null;
-                  _dropPoint = null;
-                });
-              },
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Colors.redAccent),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Station: ${_selectedStation ?? "Please select a station from home screen"}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  if (_selectedStation == null)
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Go Back'),
+                    ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 16),
@@ -754,13 +752,12 @@ class _BookCoolieState extends State<BookCoolie> {
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller:
-                        _trainNameNumberController, // Updated controller
+                    controller: _trainNameNumberController,
                     decoration: InputDecoration(
                       border: borderStyle,
                       enabledBorder: borderStyle,
                       focusedBorder: borderStyle,
-                      labelText: 'Train Name/Number', // Updated label
+                      labelText: 'Train Name/Number',
                     ),
                   ),
                 ),

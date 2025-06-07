@@ -4,7 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class FourWheelerCart extends StatefulWidget {
-  const FourWheelerCart({Key? key}) : super(key: key);
+  final String? selectedStation;
+
+  const FourWheelerCart({Key? key, this.selectedStation}) : super(key: key);
 
   @override
   State<FourWheelerCart> createState() => _FourWheelerCartState();
@@ -35,6 +37,8 @@ class _FourWheelerCartState extends State<FourWheelerCart> {
   void initState() {
     super.initState();
     _loadUserData();
+    // Initialize station from parameter
+    _selectedStation = widget.selectedStation;
   }
 
   Future<void> _loadUserData() async {
@@ -226,41 +230,37 @@ class _FourWheelerCartState extends State<FourWheelerCart> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Station Selection
-                    const Text('Select Station'),
+                    // Station Display (instead of dropdown)
+                    const Text('Station'),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        hintText: 'Select the station',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.grey),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
                       ),
-                      icon: const Icon(Icons.arrow_drop_down),
-                      isExpanded: true,
-                      value: _selectedStation,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select a station';
-                        }
-                        return null;
-                      },
-                      items: stations.map((station) {
-                        return DropdownMenuItem(
-                          value: station,
-                          child: Text(station),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedStation = value;
-                        });
-                      },
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade50,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: Colors.redAccent,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            _selectedStation ?? 'No station selected',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
 

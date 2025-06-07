@@ -4,7 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class WheelChair extends StatefulWidget {
-  const WheelChair({Key? key}) : super(key: key);
+  final String? selectedStation;
+
+  const WheelChair({Key? key, this.selectedStation}) : super(key: key);
 
   @override
   State<WheelChair> createState() => _WheelChairState();
@@ -34,6 +36,8 @@ class _WheelChairState extends State<WheelChair> {
   void initState() {
     super.initState();
     _loadUserData();
+    // Initialize station from parameter
+    _selectedStation = widget.selectedStation;
   }
 
   Future<void> _loadUserData() async {
@@ -221,50 +225,37 @@ class _WheelChairState extends State<WheelChair> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // const Text(
-                    //   'Wheelchair Assistance Booking',
-                    //   style: TextStyle(
-                    //     fontSize: 18,
-                    //     fontWeight: FontWeight.bold,
-                    //   ),
-                    // ),
-                    // const SizedBox(height: 24),
-
-                    // Station Selection
-                    const Text('Select Station'),
+                    // Station Display (instead of dropdown)
+                    const Text('Station'),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        hintText: 'Select the station',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.grey),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
-                        ),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
                       ),
-                      icon: const Icon(Icons.arrow_drop_down),
-                      isExpanded: true,
-                      value: _selectedStation,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select a station';
-                        }
-                        return null;
-                      },
-                      items: stations.map((station) {
-                        return DropdownMenuItem(
-                          value: station,
-                          child: Text(station),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedStation = value;
-                        });
-                      },
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade50,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: Colors.redAccent,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            _selectedStation ?? 'No station selected',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
 

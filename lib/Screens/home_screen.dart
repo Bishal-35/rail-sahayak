@@ -9,6 +9,7 @@ import 'package:rail_sahayak/Screens/food_services.dart';
 import 'package:rail_sahayak/Screens/login_screen.dart';
 import 'package:rail_sahayak/Screens/on_duty_staff_screen.dart';
 import 'package:rail_sahayak/Screens/four_wheeler_cart.dart';
+import 'package:rail_sahayak/widgets/app_drawer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -171,143 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF1F0),
-      drawer: Drawer(
-        elevation: 16.0,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
-                blurRadius: 10,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              DrawerHeader(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.redAccent, Colors.red],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    CircleAvatar(
-                      backgroundColor: Colors.white,
-                      radius: 30,
-                      child: Icon(
-                        Icons.train,
-                        color: Colors.redAccent,
-                        size: 36,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      'Your RailSahayak',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Your rail travel assistant',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Text(
-                  'MENU',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.info, color: Colors.redAccent),
-                title: const Text(
-                  'About Us',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                onTap: () => Navigator.pop(context),
-                tileColor: Colors.transparent,
-                hoverColor: Colors.redAccent.withOpacity(0.1),
-              ),
-              const SizedBox(height: 5),
-              ListTile(
-                leading: const Icon(
-                  Icons.currency_rupee,
-                  color: Colors.redAccent,
-                ),
-                title: const Text(
-                  'Pricing',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                onTap: () => Navigator.pop(context),
-                tileColor: Colors.transparent,
-                hoverColor: Colors.redAccent.withOpacity(0.1),
-              ),
-              const SizedBox(height: 5),
-              ListTile(
-                leading: const Icon(Icons.cancel, color: Colors.redAccent),
-                title: const Text(
-                  'Cancellation',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                onTap: () => Navigator.pop(context),
-                tileColor: Colors.transparent,
-                hoverColor: Colors.redAccent.withOpacity(0.1),
-              ),
-              const Divider(
-                height: 30,
-                thickness: 1,
-                indent: 16,
-                endIndent: 16,
-              ),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.redAccent),
-                title: const Text(
-                  'Logout',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                onTap: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => LoginPage()),
-                    (route) => false,
-                  );
-                },
-                tileColor: Colors.transparent,
-                hoverColor: Colors.redAccent.withOpacity(0.1),
-              ),
-            ],
-          ),
-        ),
-      ),
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -541,29 +406,73 @@ class _HomeScreenState extends State<HomeScreen> {
             /// Section 1 - Services at Your Station
             buildSection("Station Services", [
               buildServiceCard("Book a Coolie", Icons.luggage, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => BookCoolie()),
-                );
+                if (selectedStation != 'Select Station') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          BookCoolie(selectedStation: selectedStation),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please select a station first"),
+                    ),
+                  );
+                }
               }),
               buildServiceCard("Wheel Chair", Icons.accessible, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => WheelChair()),
-                );
+                if (selectedStation != 'Select Station') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          WheelChair(selectedStation: selectedStation),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please select a station first"),
+                    ),
+                  );
+                }
               }),
               buildServiceCard("4-Wheeler Cart", Icons.electric_rickshaw, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => FourWheelerCart()),
-                );
+                if (selectedStation != 'Select Station') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          FourWheelerCart(selectedStation: selectedStation),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please select a station first"),
+                    ),
+                  );
+                }
               }),
               // buildServiceCard("Retiring Room", Icons.hotel, _bookRetiringRoom),
               buildServiceCard("Food Services", Icons.restaurant, () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => FoodServices()),
-                );
+                if (selectedStation != 'Select Station') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          FoodServices(stationName: selectedStation),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please select a station first"),
+                    ),
+                  );
+                }
               }),
               buildServiceCard("Shop & Enjoy", Icons.shopping_bag, () {
                 ScaffoldMessenger.of(

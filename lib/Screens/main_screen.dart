@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:rail_sahayak/Screens/contact_us_screen.dart';
+// import 'package:rail_sahayak/Screens/contact_us_screen.dart';
 import 'package:rail_sahayak/Screens/feedback_complaint_screen.dart';
 import 'package:rail_sahayak/Screens/order_screen.dart';
 import 'home_screen.dart'; // Make sure this is in your lib folder
@@ -17,15 +17,15 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     HomeScreen(),
     OrderScreen(),
-    ContactUsScreen(),
     FeedbackComplaintScreen(),
+    // ContactUsScreen(),
   ];
 
   final List<String> _titles = [
     'Home',
     'Orders',
-    'Contact Us',
     'Complaint Feedback',
+    // 'Contact Us',
   ];
 
   void _onItemTapped(int index) {
@@ -55,13 +55,13 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Bookings',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.contact_phone),
-            label: 'Contact Us',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.feedback),
             label: 'Feedback',
           ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.contact_phone),
+          //   label: 'Contact Us',
+          // ),
         ],
       ),
     );
