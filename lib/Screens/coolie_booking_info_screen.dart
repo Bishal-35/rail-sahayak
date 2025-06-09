@@ -169,6 +169,14 @@ class _CoolieBookingInfoScreenState extends State<CoolieBookingInfoScreen> {
                   "Batch Id : ${data['coolie_bill_number'] ?? ''}",
                 ),
                 infoRow(
+                  Icons.receipt,
+                  "Bill Number: ${data['bill_number'] ?? ''}",
+                ),
+                infoRow(
+                  Icons.phone,
+                  "Phone Number: ${data['coolie_number'] ?? ''}",
+                ),
+                infoRow(
                   Icons.train,
                   "Coach Number : ${data['coachNumber'] ?? ''}",
                 ),

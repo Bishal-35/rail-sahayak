@@ -129,6 +129,13 @@ class _OrderScreenState extends State<OrderScreen>
                             SizedBox(height: 4),
                             Text("Pickup : ${data['pickupPoint'] ?? 'N/A'}"),
                             Text("Drop : ${data['dropPoint'] ?? 'N/A'}"),
+                            // Add phone number and bill number
+                            Text(
+                              "Phone Number: ${data['coolie_number'] ?? 'N/A'}",
+                            ),
+                            Text(
+                              "Bill Number: ${data['bill_number'] ?? 'N/A'}",
+                            ),
                             Align(
                               alignment: Alignment.centerRight,
                               child: Icon(Icons.arrow_forward_ios),

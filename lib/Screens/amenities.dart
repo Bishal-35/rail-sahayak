@@ -13,89 +13,84 @@ class _AmenitiesScreenState extends State<AmenitiesScreen> {
   late Map<String, String> amenityDescriptions;
 
   final Map<String, String> raipurAmenities = {
-    "FOB RAMP AND ESCALATORS":
-        """•  FOOT OVER BRIDGE BSP END - NEAR POLE NO. 07-08
-•  FOOT OVER BRIDGE NEAR GATE NO 02 - NEAR POLE NO. 18-19
-•  LIFT (03 NOS) - 01 NEAR GATE NO.02 NEAR POLE NO. 21-22, 02 FOB AT PF 02/03, 03 FOB AT PF 05/06
-•  FOOT OVER BRIDGE NEW - NEAR POLE NO. 24-25
-•  FOOT OVER BRIDGE DURG END - NEAR POLE NO. 34-35
-•  ESCALATOR UPWARD AND DOWNWARD - 01 NOS OUTSIDE GATE NO. 02, 01 NOS PF 07 GUDIYARI SIDE""",
+    "Good Approach Road":
+        """•  Good Approach Road is Available for Pickup and Drop at Entry Gate - City Side & PF-7 SIDE""",
 
-    "SAHYOG COUNTER": """•  SAHYOG COUNTER - GATE NO. 02""",
-
-    "CLOAK ROOM": """•  CLOAK ROOM - NEAR POLE NO. 23 """,
-
-    "AKSHITA BUBBLES (ONLY FOR UNACCOMPANIED LADIES)":
-        """•  AKSHITA (ONLY FOR LADIES) - NEAR POLE NO. 30-31 """,
-
-    "LOUNGES AND WAITING HALL":
-        """•  UPPER CLASS WAITING GENTS - NEAR POLE NO. 17-18
-•  UPPER CLASS WAITING LADIES - NEAR POLE NO. 17-18
-•  SECOND CLASS WAITING HALL GENTS - NEAR POLE NO. 19-20
-•  SECOND CLASS WAITING HALL LADIES - NEAR POLE NO. 18-19
-•  VIP-LOUNGE - NEAR POLE NO. 13-14
-•  RETIRING ROOM (03 NOS AC, 02 NOS NON AC) - UPSTAIRS NEAR POLE NO. 15-16
-•  DORMITORY (08 BEDS) - UPSTAIRS NEAR POLE NO. 15-16
-•  AC DORMITORY (14 BEDS) - UPSTAIRS PRS BUILDING
-•  OPEN WAITING AREA GENTS - NEAR POLE NO. 31-32
-""",
-
-    "RAIL PARCEL AND MAIL SERVICE ":
-        """•  RAIL MAIL SERVICE - NEAR POLE NO. 09-11
-•  PARCEL OFFICE OUTSIDE PLATFORM MAIN SIDE - IN FRONT OF EXIT GATE PF PF 1A""",
-
-    "TOILET": """•  TOILET - PAY & USE TOILET ALL WAITING HALL""",
-
-    "PARKING FACILITIES":
+    "Parking Facilities":
         """•  TWO WHEELER PARKING - NEAR ENTRANCE OF STATION AREA GURUDWARA SIDE
-•  FOUR WHEELER PARKING - IN FRONT OF STATION BUILDING GATE NO. 02
+•  FOUR WHEELER PARKING - IN FRONT OF STATION BUILDING GATE NO 02
 •  FOUR WHEELER PARKING (PREMIUM) - IN FRONT OF VIP GATE, GATE NO. 01""",
 
-    "ATM": """•  ATM(SBI,PNB,BOB) 03 NOS - NEAR BOOKING COUNTER""",
+    "Laungs & Waiting Halls":
+        """•  VIP-LOUNGE - COLUMN NO-13-14 (Near Gate no - 1 at Platform - 1)
+•  RETIRING ROOM (03 NOS AC, 02 NOS NON-AC) - UPSTAIRS COLUMN NO 15-16 (VIP Gate at Platform - 1)
+•  DORMITORY(08 BEDS) - UPSTAIRS COLUMN NO 15-16 (VIP Gate at Platform - 1)
+•  UPPER CLASS WAITING GENTS - COLUMN NO. 17-18 (Between Gate no 1 & 2 at Platform - 1)
+•  UPPER CLASS WAITING LADIES - COLUMN NO. 17-18 (Between Gate no 1 & 2 at Platform - 1)
+•  ORH - Up Stairs VIP Gate
+•  SECOND CLASS WAITING HALL GENTS - COLUMN NO. 19-20 (Between Gate no 1 & 2 at Platform - 1)
+•  AC DORMITORY (14 BEDS) - UP STAIRS PRS BUILDING (Durg End)
+•  SECOND CLASS WAITING HALL LADIES - COLUMN NO.18-19 (Between Gate no 1 & 2 at Platform - 1)""",
 
-    "DY STATION SUPERINTENDENT OFFICE":
-        """•  DY STATION SUPERINTENDED - NEAR POLE NO. 11-12""",
+    "Lifts, Escalators & FOB":
+        """•  Foot Over Bridge - COLUMN NO. 18-19 (Near Gate No 02)
+•  Foot Over Bridge BSP End - COLUMN NO. 07-08
+•  Foot Over Bridge New - COLUMN NO. 24-25 (Durg End)
+•  Foot Over Bridge Durg End - COLUMN NO. 34-35 (Durg End)
+•  Escalator Upward and Downward - 01 NOS OUT-SIDE GATE NO 02 01 NOS PF 07 GUDIYARI SIDE
+•  Lift (03 Nos) - 01 - NEAR GATE NO.02 COLUMN 21-22, 02 - FOB AT PF 02/03, 03 - FOB AT PF 05/06""",
 
-    "STATION MANAGER OFFICE": """•  STATION MANAGER - NEAR POLE NO. 12-13""",
+    "Sahyog (Enquiry) Counter": """•  Sahyog Counter - GATE NO-02""",
 
-    "CHIEF TICKET INSPECTOR OFFICE":
-        """•  CHIEF TICKET INSPECTOR STATION - NEAR POLE NO. 12-13
-•  BATTERY OPERATED CAR FOR DIVYANG SENIOR CITIZEN 01 NOS - NEAR TWO WHEELER PARKING""",
+    "ATM Facilities":
+        """•  ATM(SBI,PNB,BOB) 03 Nos - NEAR BOOKING COUNTER (Gate no -2, Concourse Area)""",
 
-    "TICKET FACILITIES": """•  UTS & PRS COUNTER - NEAR TWO WHEELER PARKING """,
+    "Cloak Facilities": """•  Cloak Room - COLUMN NO. 23 (Near Gate no - 2)""",
 
-    "CONCOURSE AREA (ATM)": """•  SBI BANK - STATE BANK OF INDIA
-•  UBI BANK - UNION BANK OF INDIA
-•  BOB BANK - BANK OF BARODA
-•  PSB BANK - PUNJAB AND SIND BANK""",
+    "Akshita Bubble (Only for Ladies)":
+        """•  Akshita (Only for Ladies) - COLUMN NO. 30-31 (Durg End)""",
+
+    "Parcel and Rail-Mail Service":
+        """•  Rail Mail Service - COLUMN NO. 09-11 (BSP End at Platform - 1)
+•  Parcel Office Outside Platform Main Side - IN FRONT OF EXIT GATE OF PF 1A""",
+
+    "Water Booths & Water Cooler": "",
+
+    "PAY & USE TOILET": """•  PAY & USE TOILET - ALL WAITING HALL""",
+
+    "Toilets & Urinal":
+        """•  Ladies Urinal at Platform - 1 - 3 at BSP End & 1 at Durg End
+•  Gents Urinal at Platform - 1 - 6 at BSP End & 6 at Durg End
+•  Ladies Urinal at Platform - 1A - 2 at Durg End
+•  Gents Urinal at Platform - 1A - 1 at Durg End
+•  Ladies Urinal at Platform - 2/3 - 2 at BSP
+•  Gents Urinal at Platform - 2/3 - 2 at BSP
+•  Gents Urinal at Platform - 5/6 - 2 at BSP End
+•  Ladies Urinal at Platform - 7 - 1 at BSP End
+•  Gents Urinal at Platform - 7 - 2 at BSP End & 2 at Durg End
+•  Ladies Toilet at Platform - 1 - 1 at Durg End
+•  Ladies Toilet at Platform - 1A - 1 at Durg End
+•  Gents Toilet at Platform - 1A - 2 at Durg End
+•  Ladies Toilet at Platform - 5/6 - 1 at BSP End
+•  Gents Toilet at Platform - 5/6 - 1 at BSP End
+•  Ladies Toilet at Platform - 7 - 1 at BSP End & 1 at Durg End
+•  Gents Toilet at Platform - 7 - 1 at BSP End & 1 at Durg End""",
+
+    "Divyang Toilet":
+        """•  Divyang Toilet at Platform - 1A - 1 at Middle of the Platform 1A
+•  Divyang Toilet at Platform - 2/3 - 1 at Durg End
+•  Divyang Toilet at Platform - 5/6 - 1 at Durg End""",
   };
 
   final Map<String, String> durgAmenities = {
-    "PARKING FACILITIES":
-        """•  TWO WHEELER PARKING - NEAR ENTRANCE AND EXIT GATE OF THE STATION
-•  TWO WHEELER PARKING (PREMIUM) - IN CIRCULATING AREA BEHIND BOOKING OFFICE BUILDING
-•  FOUR WHEELER PARKING - NEAR ENTRANCE AND EXIT GATE OF THE STATION
-•  FOUR WHEELER PARKING (PREMIUM) - IN CIRCULATING AREA BEHIND THE EXIT OF THE STATION BUILDING""",
+    "Good Approach Road":
+        "•  Two nos Approach Road available with Drop and Go facility",
 
-    "TICKETING FACILITIES":
-        """•  PASSENGER RESERVATION SYSTEM PRS & UTS COUNTER -
-     1. IN CIRCULATING AREA NEAR STATION ENTRY GATE CITY SIDE
-     2. IN CIRCULATING AREA NEAR STATION ENTRY GATE GUDHIYARI PF-7 SIDE
-     3. AT CENTRAL ENTRY GATE
-•  SAHYOG COUNTER - AT CONCOURSE AREA""",
+    "Parking Facilities":
+        """•  Paid Parking facility, separate for Two and Four wheelers available
+•  Free Parking for Divyangjans with Ramp facility near Porch Area is available""",
 
-    "FOB RAMP AND ESCALATORS":
-        """•  FOOT OVER BRIDGE RAIPUR END - AT PF-01 NEAR POLE NO. 22
-•  FOOT OVER BRIDGE NGP END - AT PF-01 NEAR POLE NO. 31
-•  ESCALATOR UPWARD AND DOWNWARD - AT PF-01 NGP END BEHIND FOOT OVER BRIDGE
-•  LIFT (03 NOS) - AT FOOT OVER BRIDGE NGP END
-•  FOOT OVER BRIDGE (PF-04 & PF-05 TO ...) - AT PF-04 & 05 R-END""",
-
-    "RAIL PARCEL AND MAIL SERVICE": """•  RAIL MAIL SERVICE - AT PF-01
-•  PARCEL OFFICE OUTSIDE PLATFORM MAIN SIDE - AT NGP END OF THE STATION BUILDING""",
-
-    "LOUNGES AND WAITING HALL":
-        """•  VIP-LOUNGE - AT PF-01 NEAR POLE NO. 24 & 25
+    "Lounges & Waiting Halls": """•  VIP-LOUNGE - AT PF-01 NEAR POLE NO. 24 & 25
 •  RETIRING ROOM (02 NO. AC, 07 NO. NON AC) - AT 1ST FLOOR OF THE STATION BUILDING
 •  DORMITORY (02 BEDS) - AT 1ST FLOOR OF THE STATION BUILDING
 •  UPPER CLASS WAITING GENTS - AT 1ST FLOOR OF THE STATION BUILDING
@@ -103,38 +98,46 @@ class _AmenitiesScreenState extends State<AmenitiesScreen> {
 •  SECOND CLASS WAITING HALL - AT PF-01 NEAR POLE NO. 28
 •  OPEN WAITING AREA - AT CONCOURSE AREA""",
 
-    "TOILET": """•  PAY & USE TOILET INSIDE THE WAITING HALL
-•  FREE LADIES AND GENTS TOILETS AT PLATFORM NO. 1""",
+    "Lifts, Escalators & FOB":
+        """•  Foot Over Bridge Raipur End - AT PF-01 NEAR POLE NO. 22
+•  Foot Over Bridge NGP End - AT PF-01 NEAR POLE NO. 31
+•  Escalator Upward and Downward - AT PF-01 NGP END BEHIND FOOT OVER BRIDGE
+•  Lift (03 Nos) - AT FOOT OVER BRIDGE NGP END
+•  Foot Over Bridge (PF-04 & PF-05 to ...) - AT PF-04 & 05 R-END""",
 
-    "CLOAK ROOM": """•  CLOAK ROOM - AT PARCEL OFFICE NEAR POLE NO. 30 & 31""",
+    "Sahyog (Enquiry) Counter": """•  Sahyog Counter - AT CONCOURSE AREA""",
 
-    "AKSHITA BUBBLES (ONLY FOR UNACCOMPANIED LADIES)":
-        """•  AKSHITA - NEAR POLE NO. 28 & 29 AT PF-01""",
+    "ATM Facilities": """•  SBI Bank - STATE BANK OF INDIA
+•  UBI Bank - UNION BANK OF INDIA
+•  BOB Bank - BANK OF BARODA
+•  PSB Bank - PUNJAB & SIND BANK""",
 
-    "DY STATION SUPERINTENDENT OFFICE":
-        """•  DY STATION SUPERINTENDENT OFFICE - AT PF-01 NEAR POLE NO. 25""",
+    "Cloak Facilities":
+        """•  Cloak Room - AT PARCEL OFFICE NEAR POLE NO. 30 & 31""",
 
-    "STATION MANAGER OFFICE":
-        """•  STATION MANAGER OFFICE - AT PF-01 NEAR POLE NO. 24""",
+    "Akshita Bubble (Only for Ladies)":
+        """•  Akshita - NEAR POLE NO. 28 & 29 AT PF-01""",
 
-    "CHIEF TICKET INSPECTOR OFFICE":
-        """•  CHIEF TICKET INSPECTOR OFFICE - AT PF-01 NEAR POLE NO. 25""",
+    "Parcel and Rail-Mail Service": """•  Rail Mail Service - AT PF-01
+•  Parcel Office Outside Platform Main Side - AT NGP END OF THE STATION BUILDING""",
 
-    "CONCOURSE AREA (ATM)": """•  SBI BANK - STATE BANK OF INDIA
-•  UBI BANK - UNION BANK OF INDIA
-•  BOB BANK - BANK OF BARODA
-•  PSB BANK - PUNJAB & SIND BANK""",
+    "Water Booths & Water Cooler":
+        """•  06 nos of Water Cooler available at PF - 1
+    •  09 nos of Water Cooler available at PF - 2&3
+    •  05 nos of Water Cooler available at PF - 4&5
+    •  01 nos of Water Cooler available nearby retiring room no 9
+    •  01 nos of Water Cooler available at PRS Office""",
 
-    "GRP OFFICE": """•  GRP OFFICE - AT PF-01 NEAR POLE NO. 22""",
+    "PAY & USE TOILET":
+        """•  01 Toilet set each (seperate for male and female passengers) towards Nagpur end and Raipur end at PF -01
+    •  01 Toilet seteach (seperate for male and female passengers) at PF - 2&3
+    •  01 Toilet set each (seperate for male and female passengers) at PF - 4&5""",
 
-    "STATION SUPERINTENDENT (COMMERCIAL)":
-        """•  STATION SUPERINTENDENT (COMMERCIAL) - AT PF-01 NEAR POLE NO. 24""",
+    "Toilets & Urinal":
+        """•  FREE LADIES AND GENTS TOILETS AT PLATFORM NO. 1""",
 
-    "BATTERY OPERATED CAR FOR DIVYANG SENIOR CITIZEN":
-        """•  BATTERY OPERATED CAR FOR DIVYANG SENIOR CITIZEN (01 NOS) - NEAR EXIT GATE BEHIND STATION MODEL IN CONCOURSE AREA""",
-
-    "DISABILITY ASSIST DEVICES":
-        """•  04-WHEEL CHAIR, 1-RAMP, 1-STRETCHER AT ENQUIRY OFFICE - AT PF-01 NEAR POLE NO. 26""",
+    "Divyang Toilet":
+        """•  Free Divyangjan Toilet in Second Class Waiting Hall at PF -1""",
   };
 
   @override
