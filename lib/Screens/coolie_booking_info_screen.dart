@@ -98,6 +98,31 @@ class _CoolieBookingInfoScreenState extends State<CoolieBookingInfoScreen> {
     );
   }
 
+  Future<void> _checkAndUpdateBookingStatus(Map<String, dynamic> data) async {
+    final bookingId = widget.bookingData['doc_id'];
+    final currentStatus = data['status'];
+
+    // Only process if status isn't already complete or cancelled
+    if (currentStatus != 'Service Complete' && currentStatus != 'Cancelled') {
+      // Get the booking timestamp
+      final Timestamp? bookingTimestamp = data['timestamp'] as Timestamp?;
+
+      if (bookingTimestamp != null) {
+        final bookingTime = bookingTimestamp.toDate();
+        final currentTime = DateTime.now();
+
+        // Check if 30 minutes have passed
+        if (currentTime.difference(bookingTime).inMinutes >= 30) {
+          // Auto-update to completed
+          await FirebaseFirestore.instance
+              .collection('coolie_bookings')
+              .doc(bookingId)
+              .update({'status': 'Service Complete'});
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bookingId = widget.bookingData['doc_id'];
@@ -117,6 +142,9 @@ class _CoolieBookingInfoScreenState extends State<CoolieBookingInfoScreen> {
           final data = snapshot.data!.data() as Map<String, dynamic>?;
 
           if (data == null) return Center(child: Text("No data found."));
+
+          // Check if booking is over 30 minutes old and update status if needed
+          _checkAndUpdateBookingStatus(data);
 
           final currentStatus = data['status'] ?? 'Arriving at the Location';
 
@@ -166,7 +194,7 @@ class _CoolieBookingInfoScreenState extends State<CoolieBookingInfoScreen> {
                 ),
                 infoRow(
                   Icons.confirmation_number,
-                  "Batch Id : ${data['coolie_bill_number'] ?? ''}",
+                  "Batch Id : ${data['batch_id'] ?? ''}",
                 ),
                 infoRow(
                   Icons.receipt,
@@ -180,23 +208,32 @@ class _CoolieBookingInfoScreenState extends State<CoolieBookingInfoScreen> {
                   Icons.train,
                   "Coach Number : ${data['coachNumber'] ?? ''}",
                 ),
-                infoRow(Icons.access_time, "${data['time'] ?? ''}"),
+                infoRow(
+                  Icons.access_time,
+                  "Booking Time : ${data['time'] ?? ''}",
+                ),
                 infoRow(
                   Icons.location_on,
                   "Pickup ${data['pickupPoint'] ?? ''}",
                 ),
-                infoRow(Icons.currency_rupee, "${data['fee'] ?? ''}"),
-                infoRow(Icons.assignment, "${data['Category'] ?? 'COOLIE'}"),
+                infoRow(Icons.currency_rupee, "Amount : ${data['fee'] ?? ''}"),
+                infoRow(
+                  Icons.assignment,
+                  "Service Request : ${data['Category'] ?? 'COOLIE'}",
+                ),
                 infoRow(
                   Icons.location_on_outlined,
                   "Drop Point : ${data['dropPoint'] ?? ''}",
                 ),
                 infoRow(Icons.line_weight, "Weight : ${data['weight'] ?? ''}"),
+                // infoRow(
+                //   Icons.confirmation_number_rounded,
+                //   "Booking Id: ${data['id'] ?? ''}",
+                // ),
                 infoRow(
-                  Icons.confirmation_number_rounded,
-                  "Booking Id: ${data['Booking Id'] ?? ''}",
+                  Icons.train,
+                  "Train Name/Train Number: ${data['trainNameNumber'] ?? ''}",
                 ),
-                infoRow(Icons.train, "Train Name: ${data['trainName'] ?? ''}"),
                 SizedBox(height: 20),
 
                 /// Action Button based on Status

@@ -211,206 +211,116 @@ class _BookCoolieState extends State<BookCoolie> {
       Fee: ₹$_fee
       ''';
 
-    // TwilioResponse response = await twilioFlutter.sendSMS(
-    //   toNumber: '+919560952125',
-    //   messageBody: message,
-    // );
     print(message);
 
-    // TwilioResponse response = await twilioFlutter.sendSMS(
-    //     toNumber: '+919560952125',
-    //     messageBody:
-    //         'You have a Passenger - Pickup Point:$_pickupPoint , Drop point: $_dropPoint at:_$_selectedTime, Train Number:${_trainNumberController.text}, Train name:${_trainNameController.text}, Fee:₹$_fee');
-    // print(response.responseCode);
-
-    // print('Twilio Response Code: ${response.responseCode}');
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   SnackBar(content: Text('Request sent!')),
-    // );
     final user = FirebaseAuth.instance.currentUser;
-
-    // if (user != null) {
-    //   user.uid;
-    // }
 
     try {
       setState(() {
         isLoading = true;
       });
 
-      // First ensure all coolies have the required fields
-      await _ensureAllCooliesHaveQueueFields();
+      // Create a timeout to ensure loading state is reset
+      bool operationCompleted = false;
+      Timer(Duration(seconds: 20), () {
+        if (!operationCompleted && isLoading) {
+          print("Submit operation timed out - resetting UI");
+          setState(() {
+            isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Network operation timed out. Please check your connection and try again.',
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      });
+
+      // Try to ensure all coolies have queue fields
+      try {
+        await _ensureAllCooliesHaveQueueFields();
+      } catch (e) {
+        print("Error ensuring queue fields: $e");
+        // Continue anyway - this shouldn't block booking
+      }
 
       print("Checking for available coolies...");
 
-      // Try to find available coolies with proper queue ordering
-      final QuerySnapshot availableCoolies = await FirebaseFirestore.instance
-          .collection('coolie_list')
-          .where('Available', isEqualTo: true)
-          .orderBy(
-            'last_available_time',
-          ) // Order by availability time to get fair distribution
-          .limit(10) // Get more coolies to see what's available
-          .get();
-
-      print("Found ${availableCoolies.docs.length} available coolies");
-
-      // If no coolies at all - try to find any coolies that exist
-      if (availableCoolies.docs.isEmpty) {
-        // For testing purposes, we'll check if any coolies exist
-        final allCoolies = await FirebaseFirestore.instance
+      try {
+        // Try to find available coolies with proper queue ordering
+        final QuerySnapshot availableCoolies = await FirebaseFirestore.instance
             .collection('coolie_list')
+            .where('Available', isEqualTo: true)
+            .orderBy('last_available_time')
+            .limit(10)
             .get();
 
-        print(
-          "Found ${allCoolies.docs.length} total coolies (including unavailable)",
-        );
+        print("Found ${availableCoolies.docs.length} available coolies");
 
-        if (allCoolies.docs.isEmpty) {
-          // No coolies at all - add a test coolie as a last resort
-          print("No coolies found in database at all. Adding a test coolie.");
-
-          final coolieDoc = await FirebaseFirestore.instance
-              .collection('coolie_list')
-              .add({
-                'Name': 'Test Sahayak ${DateTime.now().millisecond}',
-                'Phone_number':
-                    '98765${DateTime.now().second.toString().padLeft(5, '0')}',
-                'Available': true,
-                'Bill_no': _generateUniqueBillNo(),
-                'last_available_time': Timestamp.now(),
-              });
-
-          // Retry the query to get the newly added coolie
-          print("Retrying query after adding test data...");
-          final retryQuery = await FirebaseFirestore.instance
-              .collection('coolie_list')
-              .doc(coolieDoc.id)
-              .get();
-
-          if (retryQuery.exists) {
-            print("Found test coolie, proceeding with booking");
-            await processBooking(retryQuery, user);
-            return;
-          }
-        } else {
-          // We have coolies but none are available - mark one as available
-          print(
-            "Found coolies but none are available. Marking one as available.",
+        // If a coolie is available, use it
+        if (availableCoolies.docs.isNotEmpty) {
+          final DocumentSnapshot selectedCoolie = availableCoolies.docs.first;
+          operationCompleted = true;
+          await processBooking(
+            selectedCoolie,
+            FirebaseAuth.instance.currentUser,
           );
-          final anyCoolicDoc = allCoolies.docs.first;
-
-          // Update to available
-          await FirebaseFirestore.instance
-              .collection('coolie_list')
-              .doc(anyCoolicDoc.id)
-              .update({'Available': true, 'passenger_assigned': null});
-
-          // Get the updated document
-          final updatedCoolie = await FirebaseFirestore.instance
-              .collection('coolie_list')
-              .doc(anyCoolicDoc.id)
-              .get();
-
-          // Try booking again with the updated coolie
-          await processBooking(updatedCoolie, user);
           return;
         }
+      } catch (e) {
+        print("Error finding available coolies: $e");
+        // Continue to try other options
       }
 
-      // Log all available coolies for debugging
-      availableCoolies.docs.forEach((doc) {
-        print("Coolie ID: ${doc.id}, Name: ${doc['Name']}");
-      });
-
-      // If a coolie is available, use it
-      if (availableCoolies.docs.isNotEmpty) {
-        final DocumentSnapshot selectedCoolie = availableCoolies.docs.first;
-        await processBooking(selectedCoolie, user);
-        return;
-      }
-
-      // Option 2: If no explicitly available coolies, check for those with expired availability
+      // Try to find coolies with expired availability
       try {
-        print(
-          "No available coolies found, checking for coolies with expired status...",
-        );
+        print("Checking for coolies with expired status...");
 
-        // Get coolies where Available=false (limit to a reasonable number to avoid large queries)
+        // Get coolies where Available=false
         final QuerySnapshot potentialCoolies = await FirebaseFirestore.instance
             .collection('coolie_list')
             .where('Available', isEqualTo: false)
             .limit(10)
             .get();
 
-        print(
-          "Found ${potentialCoolies.docs.length} unavailable coolies to check for timeout",
-        );
-
-        // Manually filter the results on the client side
+        // Manually filter for expired timeouts
         final now = Timestamp.now();
         final availableDocs = potentialCoolies.docs.where((doc) {
-          // Check if available_at exists and is in the past
           final availableAt = doc['available_at'] as Timestamp?;
-          final isExpired =
-              availableAt != null && availableAt.compareTo(now) < 0;
-
-          if (isExpired) {
-            print("Coolie ${doc.id} has expired timeout and can be reassigned");
-          }
-
-          return isExpired;
+          return availableAt != null && availableAt.compareTo(now) < 0;
         }).toList();
 
         if (availableDocs.isNotEmpty) {
-          print("Found ${availableDocs.length} coolies with expired timeouts");
-
-          // Get the first coolie that's available
+          print("Found coolie with expired timeout");
           final selectedDoc = availableDocs.first;
 
-          // First update their status to Available=true since their timeout has expired
+          // Update their status first
           await FirebaseFirestore.instance
               .collection('coolie_list')
               .doc(selectedDoc.id)
               .update({'Available': true, 'passenger_assigned': null});
 
           // Then proceed with booking
-          await processBooking(selectedDoc, user);
+          operationCompleted = true;
+          await processBooking(selectedDoc, FirebaseAuth.instance.currentUser);
           return;
-        } else {
-          print("No coolies with expired timeouts found");
         }
-      } catch (innerError) {
-        print('Error in second query: $innerError');
-        // Continue to show the no coolies available message
+      } catch (e) {
+        print("Error checking for expired coolies: $e");
+        // Continue to final option
       }
 
-      // If still no coolies available, try to update any coolie for testing purposes
-      print("Attempting to find any coolie and mark them available...");
-      final allCoolies = await FirebaseFirestore.instance
-          .collection('coolie_list')
-          .limit(1)
-          .get();
-
-      if (allCoolies.docs.isNotEmpty) {
-        print("Found a coolie to mark as available for testing");
-        final anyCoolicDoc = allCoolies.docs.first;
-
-        // Update to available
-        await FirebaseFirestore.instance
-            .collection('coolie_list')
-            .doc(anyCoolicDoc.id)
-            .update({'Available': true, 'passenger_assigned': null});
-
-        // Try booking again
-        await processBooking(anyCoolicDoc, user);
-        return;
-      }
+      // Mark operation as completed even if we didn't find a coolie
+      operationCompleted = true;
 
       // If we get here, no coolies are available
       setState(() {
         isLoading = false;
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('No Sahayaks available at the moment.'),
@@ -418,26 +328,22 @@ class _BookCoolieState extends State<BookCoolie> {
         ),
       );
     } catch (e, stackTrace) {
-      // Print detailed error information to the console for debugging
       print('Error details: $e');
       print('Stack trace: $stackTrace');
 
-      // Set loading state to false
+      // ALWAYS reset loading state on error
       setState(() {
         isLoading = false;
       });
 
-      // Show a more informative error message
+      // Show appropriate error message
       String errorMessage = 'Failed to send request.';
 
-      // Check for specific error types to provide better messages
       if (e is FirebaseException) {
         errorMessage = 'Firebase error: ${e.message}';
       } else if (e.toString().contains('network')) {
-        // Check if the error message contains network-related text
         errorMessage = 'Network error. Please check your connection.';
       } else {
-        // Add more specific error info
         errorMessage = 'Error: ${e.toString()}';
       }
 
@@ -462,54 +368,6 @@ class _BookCoolieState extends State<BookCoolie> {
           .get();
 
       print("Found ${allCoolies.docs.length} total coolies in database");
-
-      // Only add a test coolie if absolutely none exist
-      if (allCoolies.docs.isEmpty) {
-        print(
-          "No coolies found in database. Looking for coolie data from admin collection...",
-        );
-
-        // Try to get real coolie data from an admin collection or configuration
-        final adminData = await FirebaseFirestore.instance
-            .collection('admin_settings')
-            .doc('coolie_defaults')
-            .get();
-
-        // If we have default coolie data in admin settings, use that
-        if (adminData.exists && adminData.data() != null) {
-          final defaults = adminData.data()!;
-
-          await FirebaseFirestore.instance.collection('coolie_list').add({
-            'Name': defaults['default_name'] ?? 'Sahayak',
-            'Phone_number': defaults['default_phone'] ?? '9876543210',
-            'Available': true,
-            'Bill_no': _generateUniqueBillNo(),
-            'last_available_time': Timestamp.now(),
-          });
-          print("Added coolie with admin default settings");
-        } else {
-          // If no admin defaults, add coolies with more varied details for testing
-          final coolieNames = [
-            'Rajesh Kumar',
-            'Sunil Sharma',
-            'Anil Patel',
-            'Rahul Singh',
-            'Vijay Verma',
-            'Deepak Yadav',
-          ];
-
-          final random = DateTime.now().millisecond % coolieNames.length;
-
-          await FirebaseFirestore.instance.collection('coolie_list').add({
-            'Name': coolieNames[random],
-            'Phone_number': '98765${random.toString().padLeft(5, '0')}',
-            'Available': true,
-            'Bill_no': _generateUniqueBillNo(),
-            'last_available_time': Timestamp.now(),
-          });
-          print("Added test coolie with varied details");
-        }
-      }
 
       // For each coolie without last_available_time, add it
       for (var doc in allCoolies.docs) {
@@ -550,36 +408,21 @@ class _BookCoolieState extends State<BookCoolie> {
           }
 
           if (updateNeeded) {
-            print("Updating coolie ${doc.id} with missing fields");
-            await FirebaseFirestore.instance
-                .collection('coolie_list')
-                .doc(doc.id)
-                .update(updates);
+            try {
+              print("Updating coolie ${doc.id} with missing fields");
+              await FirebaseFirestore.instance
+                  .collection('coolie_list')
+                  .doc(doc.id)
+                  .update(updates);
+            } catch (e) {
+              // Just log and continue - don't let one update failure stop the process
+              print("Failed to update coolie ${doc.id}: $e");
+            }
           }
         }
       }
     } catch (e) {
       print("Error initializing coolie queue fields: $e");
-      // Create a backup coolie only as last resort
-      try {
-        final coolieNames = [
-          'Backup Sahayak',
-          'Emergency Sahayak',
-          'Service Sahayak',
-        ];
-        final random = DateTime.now().millisecond % coolieNames.length;
-
-        await FirebaseFirestore.instance.collection('coolie_list').add({
-          'Name': coolieNames[random],
-          'Phone_number': '98765${(10000 + random).toString()}',
-          'Available': true,
-          'Bill_no': _generateUniqueBillNo(),
-          'last_available_time': Timestamp.now(),
-        });
-        print("Added backup coolie after error");
-      } catch (innerError) {
-        print("Failed to add backup coolie: $innerError");
-      }
     }
   }
 
@@ -588,72 +431,87 @@ class _BookCoolieState extends State<BookCoolie> {
     DocumentSnapshot selectedCoolie,
     User? user,
   ) async {
-    final String coolieId = selectedCoolie.id;
+    // Add a timeout for the whole process
+    bool operationCompleted = false;
 
-    // Get coolie data with fallbacks for missing values
-    final coolieData = selectedCoolie.data() as Map<String, dynamic>? ?? {};
-
-    // Use null-aware operators to handle missing data gracefully
-    String coolieName = coolieData['Name'] ?? 'Unknown Sahayak';
-    String cooliePhone = coolieData['Phone_number'] ?? 'No Phone Number';
-
-    print("Processing booking with coolie: $coolieName ($cooliePhone)");
-
-    // Generate a unique bill number for this booking
-    String uniqueBillNo = _generateUniqueBillNo();
-
-    Map<String, dynamic> bookingData = {
-      'id': user?.uid,
-      'pickupPoint': _pickupPoint,
-      'dropPoint': _dropPoint,
-      'time': _selectedTime.toString(),
-      'name': _nameController.text,
-      'trainNameNumber': _trainNameNumberController.text,
-      'coachNumber': _coachNumberController.text,
-      'seatNumber': _seatNumberController.text,
-      'weight': _weightController.text,
-      'numberOfCoolies': _numberOfCooliesController.text,
-      'fee': _fee,
-      'timestamp': FieldValue.serverTimestamp(),
-      'coolie_assigned': coolieId,
-      'coolie_name': coolieName,
-      'coolie_number': cooliePhone,
-      'bill_number': uniqueBillNo,
-      'status': 'Arriving at Your Location',
-    };
-
-    final docRef = FirebaseFirestore.instance
-        .collection('coolie_bookings')
-        .doc();
-    bookingData['doc_id'] = docRef.id;
-
-    await docRef.set(bookingData);
-
-    // Calculate timestamp for 30 minutes from now
-    DateTime now = DateTime.now();
-    DateTime availableAt = now.add(
-      Duration(minutes: 2), // Changed from 2 to 30 minutes
-    );
-
-    // Update coolie's document with available_at timestamp
-    await FirebaseFirestore.instance
-        .collection('coolie_list')
-        .doc(coolieId)
-        .update({
-          'Available': false,
-          'passenger_assigned': user?.uid,
-          'available_at': Timestamp.fromDate(availableAt),
+    // Create a timer to ensure we don't get stuck in a loading state
+    Timer? timeoutTimer = Timer(Duration(seconds: 15), () {
+      if (!operationCompleted) {
+        print("Booking operation timed out - resetting UI");
+        setState(() {
+          isLoading = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Operation timed out. Please try again.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    });
 
-    // Set a timer to update the coolie's status after the timeout period
-    if (_coolieTimers.containsKey(coolieId)) {
-      _coolieTimers[coolieId]?.cancel();
-    }
+    try {
+      final String coolieId = selectedCoolie.id;
 
-    // Create a new timer - this is our simple client-side approach
-    _coolieTimers[coolieId] = Timer(
-      Duration(minutes: 2), // Set to 30 minutes
-      () async {
+      // Get coolie data with fallbacks for missing values
+      final coolieData = selectedCoolie.data() as Map<String, dynamic>? ?? {};
+
+      // Use null-aware operators to handle missing data gracefully
+      String coolieName = coolieData['Name'] ?? 'Unknown Sahayak';
+      String cooliePhone = coolieData['Phone_number'] ?? 'No Phone Number';
+      String coolieBillNo = coolieData['Bill_no'] ?? _generateUniqueBillNo();
+
+      print("Processing booking with coolie: $coolieName ($cooliePhone)");
+
+      Map<String, dynamic> bookingData = {
+        'id': user?.uid,
+        'pickupPoint': _pickupPoint,
+        'dropPoint': _dropPoint,
+        'time': _selectedTime.toString(),
+        'name': _nameController.text,
+        'trainNameNumber': _trainNameNumberController.text,
+        'coachNumber': _coachNumberController.text,
+        'seatNumber': _seatNumberController.text,
+        'weight': _weightController.text,
+        'numberOfCoolies': _numberOfCooliesController.text,
+        'fee': _fee,
+        'timestamp': FieldValue.serverTimestamp(),
+        'coolie_assigned': coolieId,
+        'coolie_name': coolieName,
+        'coolie_number': cooliePhone,
+        'bill_number': coolieBillNo,
+        'status': 'Arriving at Your Location',
+      };
+
+      // Try to create the booking document with timeout handling
+      final docRef = FirebaseFirestore.instance
+          .collection('coolie_bookings')
+          .doc();
+      bookingData['doc_id'] = docRef.id;
+
+      await docRef.set(bookingData);
+
+      // Calculate timestamp for 30 minutes from now
+      DateTime now = DateTime.now();
+      DateTime availableAt = now.add(Duration(minutes: 30));
+
+      // Update coolie's document with available_at timestamp
+      await FirebaseFirestore.instance
+          .collection('coolie_list')
+          .doc(coolieId)
+          .update({
+            'Available': false,
+            'passenger_assigned': user?.uid,
+            'available_at': Timestamp.fromDate(availableAt),
+          });
+
+      // Set a timer to update the coolie's status after the timeout period
+      if (_coolieTimers.containsKey(coolieId)) {
+        _coolieTimers[coolieId]?.cancel();
+      }
+
+      // Create a new timer for this coolie
+      _coolieTimers[coolieId] = Timer(Duration(minutes: 30), () async {
         try {
           // First check if the coolie is still assigned to this booking
           final coolieDoc = await FirebaseFirestore.instance
@@ -669,15 +527,13 @@ class _BookCoolieState extends State<BookCoolie> {
             );
 
             // When the timer expires, make the coolie available but put them at the end of the queue
-            // by setting their 'last_available_time' to now
             await FirebaseFirestore.instance
                 .collection('coolie_list')
                 .doc(coolieId)
                 .update({
                   'Available': true,
                   'passenger_assigned': null,
-                  'last_available_time':
-                      Timestamp.now(), // Current time to place at end of queue
+                  'last_available_time': Timestamp.now(),
                 });
           }
 
@@ -685,45 +541,68 @@ class _BookCoolieState extends State<BookCoolie> {
         } catch (e) {
           print('Error updating coolie status: $e');
         }
-      },
-    );
+      });
 
-    setState(() {
-      isLoading = false;
-    });
+      // Mark operation as completed to prevent timeout handling
+      operationCompleted = true;
+      timeoutTimer?.cancel();
 
-    // Show success dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 80),
-            const SizedBox(height: 16),
-            const Text(
-              'Your Sahayak has been booked!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 12),
-            Text('Name: $coolieName'),
-            Text('Phone Number: $cooliePhone'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop();
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              child: const Text('OK'),
-            ),
-          ],
+      setState(() {
+        isLoading = false;
+      });
+
+      // Show success dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 80),
+              const SizedBox(height: 16),
+              const Text(
+                'Your Sahayak has been booked!',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              const SizedBox(height: 12),
+              Text('Name: $coolieName'),
+              Text('Phone Number: $cooliePhone'),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      // Cancel the timeout timer if there's an error
+      timeoutTimer?.cancel();
+
+      print('Error in processBooking: $e');
+      // Always reset loading state on error
+      setState(() {
+        isLoading = false;
+      });
+
+      // Show error to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Booking failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -1073,19 +952,42 @@ class _BookCoolieState extends State<BookCoolie> {
               child: ElevatedButton(
                 onPressed: isLoading ? null : _submitBooking,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isLoading ? Colors.grey : Colors.redAccent,
+                  backgroundColor: Colors.redAccent, // Always keep red color
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(
-                  'Submit',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                child: isLoading
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.0,
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Processing...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        'Submit',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ],
