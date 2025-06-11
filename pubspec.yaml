@@ -46,6 +46,7 @@ dependencies:
   url_launcher: ^6.2.5
   dropdown_button2: ^2.3.9
   flutter_dotenv: ^5.0.2
+  image_picker: ^0.8.6
 
 dev_dependencies:
   flutter_test:

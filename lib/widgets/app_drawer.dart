@@ -1,12 +1,40 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:rail_sahayak/Screens/login_screen.dart';
 import 'package:rail_sahayak/Screens/contact_us_screen.dart';
 import 'package:rail_sahayak/Screens/price_info_screen.dart';
-import 'package:rail_sahayak/Screens/about_us_screen.dart'; // Add import for AboutUsScreen
+import 'package:rail_sahayak/Screens/about_us_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({Key? key}) : super(key: key);
+
+  Future<String> _getUserName() async {
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists && userDoc.data() != null) {
+          Map<String, dynamic> userData =
+              userDoc.data() as Map<String, dynamic>;
+
+          // Check if name exists and is valid
+          if (userData.containsKey('name') &&
+              userData['name'] is String &&
+              (userData['name'] as String).trim().isNotEmpty) {
+            return (userData['name'] as String).trim();
+          }
+        }
+      } catch (e) {
+        print('Error fetching user data: $e');
+      }
+    }
+    return 'User';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,23 +64,38 @@ class AppDrawer extends StatelessWidget {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
+                  // Replace the FutureBuilder with a static CircleAvatar
                   CircleAvatar(
                     backgroundColor: Colors.white,
                     radius: 30,
-                    child: Icon(Icons.train, color: Colors.redAccent, size: 36),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Your RailSahayak',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                    child: const Icon(
+                      Icons.person,
+                      color: Colors.redAccent,
+                      size: 36,
                     ),
                   ),
-                  Text(
-                    'Your rail travel assistant',
+                  const SizedBox(height: 12),
+                  FutureBuilder<String>(
+                    future: _getUserName(),
+                    builder: (context, snapshot) {
+                      String userName = 'User';
+                      if (snapshot.connectionState == ConnectionState.done &&
+                          snapshot.hasData) {
+                        userName = snapshot.data!;
+                      }
+                      return Text(
+                        'Welcome, $userName',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
+                  ),
+                  const Text(
+                    'Your railway station assistant',
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],

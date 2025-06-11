@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:rail_sahayak/Screens/main_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,6 +13,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController otpController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
 
   bool isLoading = false;
   bool otpSent = false;
@@ -65,12 +67,151 @@ class _LoginPageState extends State<LoginPage> {
         smsCode: otpController.text.trim(),
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
-      navigateToMainScreen();
+      checkUserNameAndNavigate();
     } catch (e) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Invalid OTP. Try again.')));
       setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> checkUserNameAndNavigate() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists &&
+            userDoc.data()!.containsKey('name') &&
+            userDoc.data()!['name'] != null &&
+            userDoc.data()!['name'].toString().trim().isNotEmpty) {
+          navigateToMainScreen();
+        } else {
+          showNameInputDialog();
+        }
+      } catch (e) {
+        // If there's an error retrieving the user document, show the name input dialog
+        showNameInputDialog();
+      }
+    } else {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Authentication failed. Please try again.')),
+      );
+    }
+  }
+
+  void showNameInputDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false, // Prevent back button from dismissing
+        child: AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.person, color: Colors.redAccent),
+              SizedBox(width: 10),
+              Text(
+                'Enter Your Name',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Please enter your name to continue. This is required to provide you personalized services.',
+                style: TextStyle(fontSize: 14),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  hintText: 'Your full name',
+                  prefixIcon: Icon(
+                    Icons.person_outline,
+                    color: Colors.redAccent,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.redAccent, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                textCapitalization: TextCapitalization.words,
+                keyboardType: TextInputType.name,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => validateAndSaveName(context),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => validateAndSaveName(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: Text('Continue', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+      ),
+    );
+    setState(() => isLoading = false);
+  }
+
+  void validateAndSaveName(BuildContext context) async {
+    final name = nameController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Please enter your name')));
+      return;
+    }
+
+    if (name.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Name must be at least 3 characters long')),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+    await saveUserName();
+
+    if (mounted) {
+      Navigator.of(context).pop();
+      navigateToMainScreen();
+    }
+  }
+
+  Future<void> saveUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && nameController.text.trim().isNotEmpty) {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'name': nameController.text.trim(),
+        'phone': user.phoneNumber,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     }
   }
 

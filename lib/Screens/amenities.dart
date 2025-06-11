@@ -54,7 +54,67 @@ class _AmenitiesScreenState extends State<AmenitiesScreen> {
         """•  Rail Mail Service - COLUMN NO. 09-11 (BSP End at Platform - 1)
 •  Parcel Office Outside Platform Main Side - IN FRONT OF EXIT GATE OF PF 1A""",
 
-    "Water Booths & Water Cooler": "",
+    "Water Booths & Water Cooler": """PLATFORM NO 01:
+   - Water Booth WB NO .01: 4 Taps at C3-C4 (BSP END)
+   - Water Booth WB NO .06: 2 Taps at C27-C28 (NEAR CAFÉ COFFEDAY)
+   - Water Booth WB NO .08: 2 Taps at C31-C32 (NEAR AMRUTULYA)
+   - Water Cooler WC. NO. 02: 4 Taps at C3-C4 (BSP END)
+   - Water Cooler WC. NO. 03: 4 Taps at C9 (BESIDE RMS)
+   - Water Cooler WC. NO. 07: 4 Taps at C15-C16 (REFRESHMENT ROOM)
+   - Water Cooler WC. NO. 09: 2 Taps at C29-C30 (NEAR HOTEL LEROI)
+   - Water Cooler WC.NO.: 2 Taps at C36-C37 (DURG END BELOW FOB)
+
+•  PLATFORM NO 02/03:
+   - Water Booth WB NO .05: 4 Taps at C7-C8
+   - Water Booth WB NO .08: 6 Taps at C10-C11
+   - Water Booth WB NO .012: 4 Taps at C23-C24
+   - Water Booth WB NO .014: 8 Taps at C30-C31
+   - Water Booth DIVYANG WB: 1 Tap at C36-C35
+   - Water Cooler WC. NO. 02: 4 Taps at C1-C2 (BSP END)
+   - Water Cooler WC. NO. 04: 3 Taps at C5-C6 (BSP END FOB)
+   - Water Cooler WC. NO. 06: 4 Taps at C7-C8 (NEAR STALL B-4)
+   - Water Cooler WC. NO. 07: 4 Taps at C12-C13 (NEAR STALL B-1)
+   - Water Cooler WC. NO. 029: 4 Taps at C16-C17 (NEAR STALL B-2)
+   - Water Cooler WC. NO. 13: 4 Taps at C23-C24
+   - Water Cooler WC. NO. 15: 4 Taps at C35-C36 (DURG END)
+
+•  PLATFORM NO 05/06:
+   - Water Booth WB NO .01: 4 Taps at C3-C4 (BSP END)
+   - Water Booth WB NO .03: 4 Taps at C11-C12 (NEAR AMUL STALL)
+   - Water Booth WB NO .10: 4 Taps at C21-C22 (NEAR STALL C-5)
+   - Water Booth WB NO .13: 4 Taps at C29-C30 (NEAR STALL JB-6)
+   - Water Booth WB NO .15: 4 Taps at C32-C33 (NEAR FREE WATER BOOTH)
+   - Water Booth DIVYANG WB: 4 Taps at C35-36 (DURG END)
+   - Water Cooler WC. NO. 02: 4 Taps at C5-C6 (NEAR STALL C-1)
+   - Water Cooler WC. NO. 04: 4 Taps at C11-C12 (NEAR AMUL STALL)
+   - Water Cooler WC. NO. 09: at C12-C13 (NEAR AMUL STALL)
+   - Water Cooler WC. NO. 11: at C25-C26 (NEAR STALL C-3)
+   - Water Cooler WC. NO. 12: at C29-C30 (NEAR STALL JB-6)
+   - Water Cooler WC. NO. 14: at C32-C33 (NEAR FREE WATER BOOTH)
+   - Water Cooler WC. NO. 15: at C35-C36 (DURG END)
+
+•  PLATFORM NO 07:
+   - Water Booth WB NO .01: 2 Taps at C34-C34 (DURG END)
+   - Water Booth WB NO .02 & Divyang: 3 Taps at C31-C32 (NEAR DURG END)
+   - Water Booth WB NO .03: 2 Taps at C27-C28 (MIDDLE)
+   - Water Booth WB NO .04: 2 Taps at C24-C25 (MIDDLE)
+   - Water Booth WB NO .05 & Divyang: 3 Taps at C14-C15 (NEAR GUDIYARI EXIT)
+   - Water Booth WB NO .06: 2 Taps at C08-C09 (MIDDLE)
+   - Water Booth WB NO .07 & Divyang: 3 Taps at C05-C06 (BSP END)
+   - Water Cooler WC. NO. 01: 2 Taps at C33-C34 (DURG END)
+   - Water Cooler WC. NO. 02: 2 Taps at C30-C31 (NEAR DURG END)
+   - Water Cooler WC. NO. 03: 2 Taps at C27-C28 (MIDDLE)
+   - Water Cooler WC. NO. 04: 2 Taps at C24-C25 (MIDDLE)
+   - Water Cooler WC. NO. 05: 2 Taps at C14-C15 (NEAR GUDIYARI EXIT)
+   - Water Cooler WC. NO. 06: 2 Taps at C09-C08 (MIDDLE)
+   - Water Cooler WC. NO. 07: 2 Taps at C06-C05 (BSP END)
+
+•  PLATFORM NO 1A:
+   - Water Booth DIVYANG WB: 1 Tap at C04-C05 (MIDDLE)
+   - Water Cooler WC. NO. 01: 4 Taps at 1A EXIT GATE (NEAR ATVM)
+   - Water Cooler WC. NO. 01: 4 Taps at C04-C05 (MIDDLE)
+   - Water Cooler WC. NO. 01: 4 Taps at C07-C08 (MIDDLE)
+   - Water Cooler WC. NO. 01: 4 Taps at C12-C13 (DURG END)""",
 
     "PAY & USE TOILET": """•  PAY & USE TOILET - ALL WAITING HALL""",
 
