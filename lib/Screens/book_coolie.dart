@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class BookCoolie extends StatefulWidget {
   final String? selectedStation;
@@ -481,6 +483,7 @@ class _BookCoolieState extends State<BookCoolie> {
         'coolie_number': cooliePhone,
         'bill_number': coolieBillNo,
         'status': 'Arriving at Your Location',
+        'service_type': 'coolie', // Add service type for API
       };
 
       // Try to create the booking document with timeout handling
@@ -490,6 +493,33 @@ class _BookCoolieState extends State<BookCoolie> {
       bookingData['doc_id'] = docRef.id;
 
       await docRef.set(bookingData);
+
+      // Create a copy for API with serializable values
+      Map<String, dynamic> apiBookingData = Map.from(bookingData);
+      if (apiBookingData.containsKey('timestamp')) {
+        apiBookingData.remove(
+          'timestamp',
+        ); // Remove server timestamp as it can't be serialized
+      }
+
+      // Send to API endpoint
+      final response = await http.post(
+        Uri.parse(
+          'https://rail-sahayak-api-612894814147.us-central1.run.app/create',
+        ),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(apiBookingData),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        // API call successful
+        print('Data successfully sent to API');
+      } else {
+        // API call failed but Firebase succeeded
+        print('Warning: API call failed with status: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        // Continue execution since Firebase succeeded
+      }
 
       // Calculate timestamp for 30 minutes from now
       DateTime now = DateTime.now();

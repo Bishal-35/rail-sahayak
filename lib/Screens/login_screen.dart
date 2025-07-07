@@ -14,6 +14,8 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController otpController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
 
   bool isLoading = false;
   bool otpSent = false;
@@ -39,8 +41,30 @@ class _LoginPageState extends State<LoginPage> {
         navigateToMainScreen();
       },
       verificationFailed: (FirebaseAuthException e) {
+        String errorMessage = 'Verification failed.';
+
+        // Provide more specific error messages based on the error code
+        if (e.code == 'too-many-requests') {
+          errorMessage =
+              'Too many attempts. Your device is temporarily blocked. Please try again after some time (usually 1-2 hours).';
+        } else if (e.code == 'invalid-phone-number') {
+          errorMessage =
+              'The phone number format is incorrect. Please check and try again.';
+        } else if (e.code == 'quota-exceeded') {
+          errorMessage =
+              'Service temporarily unavailable. Please try again later.';
+        } else if (e.code == 'captcha-check-failed') {
+          errorMessage = 'Captcha verification failed. Please try again.';
+        } else {
+          errorMessage = 'Verification failed. ${e.message}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Verification failed. ${e.message}')),
+          SnackBar(
+            content: Text(errorMessage),
+            duration: Duration(seconds: 5),
+            backgroundColor: Colors.redAccent,
+          ),
         );
         setState(() => isLoading = false);
       },
@@ -60,6 +84,13 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> verifyOTP() async {
+    if (otpController.text.trim().length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a valid 6-digit OTP')),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
     try {
       final credential = PhoneAuthProvider.credential(
@@ -69,9 +100,25 @@ class _LoginPageState extends State<LoginPage> {
       await FirebaseAuth.instance.signInWithCredential(credential);
       checkUserNameAndNavigate();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Invalid OTP. Try again.')));
+      String errorMessage = 'Invalid OTP. Try again.';
+
+      if (e is FirebaseAuthException) {
+        if (e.code == 'too-many-requests') {
+          errorMessage =
+              'Too many failed attempts. Your device is temporarily blocked. Please try again after some time (usually 1-2 hours).';
+        } else if (e.code == 'invalid-verification-code') {
+          errorMessage =
+              'The verification code is invalid. Please check and try again.';
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          duration: Duration(seconds: 5),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       setState(() => isLoading = false);
     }
   }
@@ -85,17 +132,44 @@ class _LoginPageState extends State<LoginPage> {
             .doc(user.uid)
             .get();
 
-        if (userDoc.exists &&
-            userDoc.data()!.containsKey('name') &&
-            userDoc.data()!['name'] != null &&
-            userDoc.data()!['name'].toString().trim().isNotEmpty) {
-          navigateToMainScreen();
+        if (userDoc.exists) {
+          final userData = userDoc.data()!;
+          
+          // Check if any required field is missing
+          bool hasName = userData.containsKey('name') && 
+                        userData['name'] != null && 
+                        userData['name'].toString().trim().isNotEmpty;
+                        
+          bool hasEmail = userData.containsKey('email') && 
+                        userData['email'] != null && 
+                        userData['email'].toString().trim().isNotEmpty;
+                        
+          bool hasAddress = userData.containsKey('address') && 
+                          userData['address'] != null && 
+                          userData['address'].toString().trim().isNotEmpty;
+          
+          // Pre-fill existing data for update
+          if (hasName) nameController.text = userData['name'];
+          if (hasEmail) emailController.text = userData['email'];
+          if (hasAddress) addressController.text = userData['address'];
+          
+          if (hasName && hasEmail && hasAddress) {
+            navigateToMainScreen();
+          } else {
+            // Show dialog to collect missing information
+            showUserDetailsDialog(
+              missingName: !hasName,
+              missingEmail: !hasEmail, 
+              missingAddress: !hasAddress
+            );
+          }
         } else {
-          showNameInputDialog();
+          // No user document exists, show the full details dialog
+          showUserDetailsDialog(missingName: true, missingEmail: true, missingAddress: true);
         }
       } catch (e) {
-        // If there's an error retrieving the user document, show the name input dialog
-        showNameInputDialog();
+        // If there's an error retrieving the user document, show the full details dialog
+        showUserDetailsDialog(missingName: true, missingEmail: true, missingAddress: true);
       }
     } else {
       setState(() => isLoading = false);
@@ -105,72 +179,193 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void showNameInputDialog() {
+  void showUserDetailsDialog({
+    required bool missingName, 
+    required bool missingEmail, 
+    required bool missingAddress
+  }) {
+    // Create a message about missing fields
+    String message = 'Please complete your profile by providing the ';
+    List<String> missingFields = [];
+    if (missingName) missingFields.add('name');
+    if (missingEmail) missingFields.add('email');
+    if (missingAddress) missingFields.add('address');
+    
+    message += missingFields.join(', ');
+    message += ' to continue.';
+
+    // Get screen size for responsive sizing
+    final screenSize = MediaQuery.of(context).size;
+    final dialogWidth = screenSize.width * 0.85 < 450 ? screenSize.width * 0.85 : 450.0;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => WillPopScope(
         onWillPop: () async => false, // Prevent back button from dismissing
-        child: AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.person, color: Colors.redAccent),
-              SizedBox(width: 10),
-              Text(
-                'Enter Your Name',
-                style: TextStyle(color: Colors.redAccent),
-              ),
-            ],
+        child: Dialog(
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: 20.0, 
+            vertical: 24.0
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Please enter your name to continue. This is required to provide you personalized services.',
-                style: TextStyle(fontSize: 14),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  hintText: 'Your full name',
-                  prefixIcon: Icon(
-                    Icons.person_outline,
-                    color: Colors.redAccent,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.redAccent, width: 2),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-                textCapitalization: TextCapitalization.words,
-                keyboardType: TextInputType.name,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => validateAndSaveName(context),
-              ),
-            ],
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () => validateAndSaveName(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-              child: Text('Continue', style: TextStyle(color: Colors.white)),
-            ),
-          ],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            width: dialogWidth,
+            constraints: BoxConstraints(
+              maxHeight: screenSize.height * 0.7,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Dialog header
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.1),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.person, color: Colors.redAccent),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Complete Your Profile',
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Dialog content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          message,
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        SizedBox(height: 16),
+                        if (missingName || nameController.text.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 12),
+                            child: TextField(
+                              controller: nameController,
+                              decoration: InputDecoration(
+                                hintText: 'Your full name',
+                                prefixIcon: Icon(
+                                  Icons.person_outline,
+                                  color: Colors.redAccent,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.redAccent, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              ),
+                              textCapitalization: TextCapitalization.words,
+                              keyboardType: TextInputType.name,
+                              textInputAction: TextInputAction.next,
+                            ),
+                          ),
+                        if (missingEmail || emailController.text.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 12),
+                            child: TextField(
+                              controller: emailController,
+                              decoration: InputDecoration(
+                                hintText: 'Your email address',
+                                prefixIcon: Icon(
+                                  Icons.email_outlined,
+                                  color: Colors.redAccent,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.redAccent, width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                            ),
+                          ),
+                        if (missingAddress || addressController.text.isNotEmpty)
+                          TextField(
+                            controller: addressController,
+                            decoration: InputDecoration(
+                              hintText: 'Your address',
+                              prefixIcon: Icon(
+                                Icons.location_on_outlined,
+                                color: Colors.redAccent,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.redAccent, width: 2),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            ),
+                            textCapitalization: TextCapitalization.sentences,
+                            keyboardType: TextInputType.streetAddress,
+                            textInputAction: TextInputAction.done,
+                            maxLines: 2,
+                            minLines: 1,
+                            onSubmitted: (_) => validateAndSaveDetails(context),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Dialog actions
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => validateAndSaveDetails(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                        child: Text('Continue', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -178,13 +373,16 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => isLoading = false);
   }
 
-  void validateAndSaveName(BuildContext context) async {
+  void validateAndSaveDetails(BuildContext context) async {
     final name = nameController.text.trim();
+    final email = emailController.text.trim();
+    final address = addressController.text.trim();
 
+    // Validate name (always required)
     if (name.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Please enter your name')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter your name')),
+      );
       return;
     }
 
@@ -195,8 +393,38 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    // Validate email (now required)
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter your email address')),
+      );
+      return;
+    }
+    
+    if (!email.contains('@') || !email.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a valid email address')),
+      );
+      return;
+    }
+
+    // Validate address (now required)
+    if (address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter your address')),
+      );
+      return;
+    }
+    
+    if (address.length < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a more detailed address')),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
-    await saveUserName();
+    await saveUserDetails();
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -204,14 +432,30 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> saveUserName() async {
+  Future<void> saveUserDetails() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null && nameController.text.trim().isNotEmpty) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+    if (user != null) {
+      final userData = {
         'name': nameController.text.trim(),
         'phone': user.phoneNumber,
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      };
+
+      // Add email and address only if they are provided
+      final email = emailController.text.trim();
+      if (email.isNotEmpty) {
+        userData['email'] = email;
+      }
+
+      final address = addressController.text.trim();
+      if (address.isNotEmpty) {
+        userData['address'] = address;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set(userData, SetOptions(merge: true));
     }
   }
 

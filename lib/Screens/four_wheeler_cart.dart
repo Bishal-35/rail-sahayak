@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class FourWheelerCart extends StatefulWidget {
   final String? selectedStation;
@@ -94,29 +96,63 @@ class _FourWheelerCartState extends State<FourWheelerCart> {
       try {
         User? user = FirebaseAuth.instance.currentUser;
         if (user != null) {
+          // Create data map that will be used for both Firebase and API
+          Map<String, dynamic> bookingData = {
+            'userId': user.uid,
+            'station': _selectedStation,
+            'name': _nameController.text,
+            'phone': _phoneController.text,
+            'pnr': _pnrController.text,
+            'train': _trainController.text,
+            'luggageCount': _luggageCountController.text,
+            'coach': _coachController.text,
+            'seat': _seatController.text,
+            'journeyDate': _selectedDate.toIso8601String(),
+            'arrivalTime': '${_selectedTime.hour}:${_selectedTime.minute}',
+            'platform': _platformController.text,
+            'specialInstructions': _specialInstructionsController.text,
+            'status': 'pending',
+            'service_type': 'fourwheeler', // Add service type for API
+          };
+
           // Add the booking to Firestore
           DocumentReference docRef = await FirebaseFirestore.instance
               .collection('fourwheeler_bookings')
-              .add({
-                'userId': user.uid,
-                'station': _selectedStation,
-                'name': _nameController.text,
-                'phone': _phoneController.text,
-                'pnr': _pnrController.text,
-                'train': _trainController.text,
-                'luggageCount': _luggageCountController.text,
-                'coach': _coachController.text,
-                'seat': _seatController.text,
-                'journeyDate': Timestamp.fromDate(_selectedDate),
-                'arrivalTime': '${_selectedTime.hour}:${_selectedTime.minute}',
-                'platform': _platformController.text,
-                'specialInstructions': _specialInstructionsController.text,
-                'status': 'pending',
-                'createdAt': FieldValue.serverTimestamp(),
-              });
+              .add(bookingData);
 
           // Update the document with its own ID
           await docRef.update({'doc_id': docRef.id});
+
+          // Add the doc_id to the data being sent to API
+          bookingData['doc_id'] = docRef.id;
+
+          // Convert timestamps to strings for API
+          if (bookingData.containsKey('createdAt')) {
+            bookingData.remove(
+              'createdAt',
+            ); // Remove server timestamp as it can't be serialized
+          }
+
+          // Send to API endpoint
+          final response = await http.post(
+            Uri.parse(
+              'https://rail-sahayak-api-612894814147.us-central1.run.app/create',
+            ),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(bookingData),
+          );
+
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            // API call successful
+            print('Data successfully sent to API');
+          } else {
+            // API call failed but Firebase succeeded
+            print(
+              'Warning: API call failed with status: ${response.statusCode}',
+            );
+            print('Response body: ${response.body}');
+            // Continue execution since Firebase succeeded
+          }
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -127,6 +163,7 @@ class _FourWheelerCartState extends State<FourWheelerCart> {
           Navigator.pop(context);
         }
       } catch (e) {
+        print('Error during booking: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),

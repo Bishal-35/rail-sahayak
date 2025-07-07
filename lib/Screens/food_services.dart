@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FoodStall {
   final String division;
@@ -7,6 +8,10 @@ class FoodStall {
   final String stallType;
   final String station;
   final String platformNumber;
+  final String contractEndDate;
+  final String contractStartDate;
+  final String licenseeName;
+  final String contactNumber; // Added phone number field
 
   FoodStall({
     required this.division,
@@ -14,16 +19,36 @@ class FoodStall {
     required this.stallType,
     required this.station,
     required this.platformNumber,
+    this.contractEndDate = '',
+    this.contractStartDate = '',
+    this.licenseeName = '',
+    this.contactNumber = '', // Initialize with empty string
   });
+
+  // Factory constructor to create a FoodStall from Firebase document
+  factory FoodStall.fromFirestore(Map<String, dynamic> data) {
+    return FoodStall(
+      division: data['division'] ?? '',
+      stallNumber: data['stallNo'] ?? '',
+      stallType: data['stallType'] ?? '',
+      station:
+          data['stationName'] ??
+          data['stationId'] ??
+          '', // Try to use stationName if available
+      platformNumber: data['location'] ?? '',
+      contractEndDate: data['contractEndDate'] ?? '',
+      contractStartDate: data['contractStartDate'] ?? '',
+      licenseeName: data['licenseeName'] ?? '',
+      contactNumber:
+          data['contactNumber'] ?? '', // Added phone number extraction
+    );
+  }
 }
 
 class FoodServices extends StatefulWidget {
-  final String stationName; // Add parameter to receive station name
+  final String stationName;
 
-  const FoodServices({
-    super.key,
-    required this.stationName,
-  }); // Update constructor
+  const FoodServices({super.key, required this.stationName});
 
   @override
   State<FoodServices> createState() => _FoodServicesState();
@@ -31,7 +56,11 @@ class FoodServices extends StatefulWidget {
 
 class _FoodServicesState extends State<FoodServices> {
   String? _selectedStallType;
-  String? _selectedPlatform; // Add new state variable for platform filter
+  String? _selectedPlatform;
+  List<FoodStall> _allFoodStalls = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
+
   final List<String> _stallTypes = [
     'All Types',
     'Tea Stall',
@@ -40,6 +69,78 @@ class _FoodServicesState extends State<FoodServices> {
     'Juice Stall',
     'MPS',
   ];
+
+  // Add a station mapping to convert IDs to station names
+  Map<String, String> _stationIdToName = {
+    'HqpI5uy1J7nJuyy6AvWV': 'Raipur',
+    'Gyq0FfwYR5LtLtH7jix5': 'Durg',
+    // Add more mappings as needed
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    // Only fetch from Firebase, no fallback
+    _fetchFoodStalls();
+  }
+
+  // Method to fetch food stalls from Firebase
+  Future<void> _fetchFoodStalls() async {
+    try {
+      print('Attempting to fetch food stalls from Firebase...');
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+
+      final collectionRef = FirebaseFirestore.instance.collection(
+        'admin_food_services',
+      );
+      final QuerySnapshot stallsSnapshot = await collectionRef.get();
+
+      print('Fetched ${stallsSnapshot.docs.length} food stalls');
+
+      // Convert documents to FoodStall objects
+      final List<FoodStall> stalls = [];
+      for (var doc in stallsSnapshot.docs) {
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+
+          // Map station IDs to station names if needed
+          if (data['stationId'] != null &&
+              _stationIdToName.containsKey(data['stationId'])) {
+            data['stationName'] = _stationIdToName[data['stationId']];
+          }
+
+          stalls.add(FoodStall.fromFirestore(data));
+        } catch (e) {
+          print('Error parsing stall document: $e');
+        }
+      }
+
+      // Debug: Print sample data to understand format
+      if (stalls.isNotEmpty) {
+        print('Sample stall data: ');
+        print('Station: ${stalls[0].station}');
+        print('StallType: ${stalls[0].stallType}');
+        print('Platform: ${stalls[0].platformNumber}');
+      }
+
+      setState(() {
+        _allFoodStalls = stalls;
+        _isLoading = false;
+      });
+
+      print('Successfully loaded ${_allFoodStalls.length} food stalls');
+      print('Filtered stalls count: ${filteredStalls.length}');
+    } catch (e) {
+      print('Error fetching food stalls: $e');
+      setState(() {
+        _errorMessage = 'Failed to load data: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   // Method to get available platforms for the current station
   List<String> get _availablePlatforms {
@@ -90,728 +191,41 @@ class _FoodServicesState extends State<FoodServices> {
     return result;
   }
 
-  // List of all food stalls based on the data provided
-  final List<FoodStall> _allFoodStalls = [
-    // Raipur station stalls
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A1',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A11',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'CON',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A3',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A4',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A5',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A6',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B1',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B2',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B3',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B4',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B6',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'C1',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'C2',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'C3',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'C4',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'C5',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'G1',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'Gud.',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'D1',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF1A',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'JB-3',
-      stallType: 'Juice Stall',
-      station: 'Raipur',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B-5',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'C-8',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A-2',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TA1',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TA2',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TA3',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TA4',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TAE-1',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF1A',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TB1',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TB2',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TC1',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TC2',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TC3',
-      stallType: 'Trolley',
-      station: 'Raipur',
-      platformNumber: 'PF5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-1',
-      stallType: 'Milk Stall',
-      station: 'Raipur',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-2',
-      stallType: 'Milk Stall',
-      station: 'Raipur',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-3',
-      stallType: 'Milk Stall',
-      station: 'Raipur',
-      platformNumber: '2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-4',
-      stallType: 'Milk Stall',
-      station: 'Raipur',
-      platformNumber: '5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-5',
-      stallType: 'Milk Stall',
-      station: 'Raipur',
-      platformNumber: '2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-6',
-      stallType: 'Milk Stall',
-      station: 'Raipur',
-      platformNumber: '5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'JB-6',
-      stallType: 'Juice Stall',
-      station: 'Raipur',
-      platformNumber: '5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-7',
-      stallType: 'Milk Stall',
-      station: 'Raipur',
-      platformNumber: 'Gud. End',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'G-1',
-      stallType: 'Tea Stall',
-      station: 'Raipur',
-      platformNumber: 'Gud. End',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS1',
-      stallType: 'MPS',
-      station: 'Raipur',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS2',
-      stallType: 'MPS',
-      station: 'Raipur',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS3',
-      stallType: 'MPS',
-      station: 'Raipur',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS4',
-      stallType: 'MPS',
-      station: 'Raipur',
-      platformNumber: '5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS5',
-      stallType: 'MPS',
-      station: 'Raipur',
-      platformNumber: '5&6',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS6',
-      stallType: 'MPS',
-      station: 'Raipur',
-      platformNumber: '2&3',
-    ),
-
-    // Durg station stalls
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A1',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A2',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A3',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A4',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A5',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A6',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B1',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B2',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B3',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B4',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B5',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B6',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'C1',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF-4&5',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'C2',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF-4&5',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B-7',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'PF-2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'D-1',
-      stallType: 'Tea Stall',
-      station: 'Durg',
-      platformNumber: 'CON',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TA1',
-      stallType: 'Trolley',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TA2',
-      stallType: 'Trolley',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TA3',
-      stallType: 'Trolley',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TA4',
-      stallType: 'Trolley',
-      station: 'Durg',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TB1',
-      stallType: 'Trolley',
-      station: 'Durg',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TB2',
-      stallType: 'Trolley',
-      station: 'Durg',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'TB3',
-      stallType: 'Trolley',
-      station: 'Durg',
-      platformNumber: 'PF2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-1',
-      stallType: 'Milk Stall',
-      station: 'Durg',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-2',
-      stallType: 'Milk Stall',
-      station: 'Durg',
-      platformNumber: '2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-3',
-      stallType: 'Milk Stall',
-      station: 'Durg',
-      platformNumber: '4&5',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-6',
-      stallType: 'Milk Stall',
-      station: 'Durg',
-      platformNumber: '4&5',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'JB-1',
-      stallType: 'Juice Stall',
-      station: 'Durg',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS3',
-      stallType: 'MPS',
-      station: 'Durg',
-      platformNumber: '2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS4',
-      stallType: 'MPS',
-      station: 'Durg',
-      platformNumber: '4&5',
-    ),
-
-    // Other station stalls
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A2',
-      stallType: 'Tea Stall',
-      station: 'BYT',
-      platformNumber: 'PF1&2',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'C-1',
-      stallType: 'Tea Stall',
-      station: 'BYT',
-      platformNumber: 'PF-5',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS-3',
-      stallType: 'MPS',
-      station: 'BYT',
-      platformNumber: 'PF-2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'B2',
-      stallType: 'Tea Stall',
-      station: 'BYT',
-      platformNumber: 'PF3&4',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-2',
-      stallType: 'Milk Stall',
-      station: 'BYT',
-      platformNumber: '3&4',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS1',
-      stallType: 'MPS',
-      station: 'BYT',
-      platformNumber: '',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'A1',
-      stallType: 'Tea Stall',
-      station: 'Tilda',
-      platformNumber: 'PF1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS-2',
-      stallType: 'MPS Stall',
-      station: 'Tilda',
-      platformNumber: 'PF-2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-1',
-      stallType: 'Milk Stall',
-      station: 'BPHB',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MS-2',
-      stallType: 'Milk Stall',
-      station: 'BPHB',
-      platformNumber: '2&3',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'MPS-1',
-      stallType: 'MPS',
-      station: 'BPHB',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: '',
-      stallType: 'Tea Stall',
-      station: 'BYL',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: '',
-      stallType: 'Tea Stall',
-      station: 'HN',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: '',
-      stallType: 'Tea Stall',
-      station: 'DRZ',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: '',
-      stallType: 'Tea Stall',
-      station: 'BXA',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: '',
-      stallType: 'Tea Stall',
-      station: 'NPI',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: '',
-      stallType: 'Tea Stall',
-      station: 'CHBT',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: '',
-      stallType: 'Tea Stall',
-      station: 'MXA',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: '',
-      stallType: 'Tea Stall',
-      station: 'GDZ',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: '',
-      stallType: 'Tea Stall',
-      station: 'BPTP',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'URK-1',
-      stallType: 'Tea Stall',
-      station: 'URK',
-      platformNumber: '1',
-    ),
-    FoodStall(
-      division: 'Raipur',
-      stallNumber: 'BIA-3',
-      stallType: 'Tea Stall',
-      station: 'BIA',
-      platformNumber: '1',
-    ),
-  ];
-
   List<FoodStall> get filteredStalls {
     return _allFoodStalls.where((stall) {
-      // Only show stalls for Raipur and Durg
-      if (stall.station != 'Raipur' && stall.station != 'Durg') {
+      // Print debug info for first few stalls to understand filtering
+      if (_allFoodStalls.indexOf(stall) < 5) {
+        print(
+          'Filtering stall: station=${stall.station}, requested=${widget.stationName}',
+        );
+      }
+
+      // Check if this is a station ID and map it if needed
+      String stationName = stall.station;
+      if (_stationIdToName.containsKey(stall.station)) {
+        stationName = _stationIdToName[stall.station]!;
+      }
+
+      // Modified filter logic to be more flexible
+      String normalizedStallStation = stationName.trim().toLowerCase();
+      String normalizedRequestedStation = widget.stationName
+          .trim()
+          .toLowerCase();
+
+      // Match station name (more flexible matching)
+      if (!normalizedStallStation.contains(normalizedRequestedStation) &&
+          !normalizedRequestedStation.contains(normalizedStallStation)) {
         return false;
       }
 
-      // Filter by station from parameter instead of selected station
-      if (stall.station != widget.stationName) {
-        return false;
-      }
-
-      // Filter by selected stall type if not 'All Types'
+      // Filter by selected stall type if not 'All Types' - now case insensitive
       if (_selectedStallType != null &&
           _selectedStallType != 'All Types' &&
-          stall.stallType != _selectedStallType) {
+          stall.stallType.toLowerCase() != _selectedStallType!.toLowerCase()) {
         return false;
       }
 
-      // Filter by selected platform if not 'All Platforms'
+      // Filter by selected platform if not 'All Platforms' - now case insensitive
       if (_selectedPlatform != null && _selectedPlatform != 'All Platforms') {
         String normalizedStallPlatform = _normalizePlatformNumber(
           stall.platformNumber,
@@ -819,7 +233,8 @@ class _FoodServicesState extends State<FoodServices> {
         String normalizedSelectedPlatform = _normalizePlatformNumber(
           _selectedPlatform!,
         );
-        if (normalizedStallPlatform != normalizedSelectedPlatform) {
+        if (normalizedStallPlatform.toLowerCase() !=
+            normalizedSelectedPlatform.toLowerCase()) {
           return false;
         }
       }
@@ -839,11 +254,11 @@ class _FoodServicesState extends State<FoodServices> {
         .replaceAll('-', '')
         .trim();
 
-    // Special cases for common platform numbers
+    // Special cases for common platform numbers - make case insensitive
     if (normalized == "1") {
       return "1";
-    } else if (normalized == "1a" || normalized == "1A") {
-      return "1A";
+    } else if (normalized.toLowerCase() == "1a") {
+      return "1a"; // Return lowercase for consistency
     } else if (normalized == "2&3" || normalized == "2and3") {
       return "2&3";
     } else if (normalized == "4&5" || normalized == "4and5") {
@@ -962,160 +377,217 @@ class _FoodServicesState extends State<FoodServices> {
       ),
       body: Container(
         color: const Color(0xFFF8F8F8),
-        child: Column(
-          children: [
-            // Filter controls - place dropdowns side by side
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.shade200,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                // Changed from Column to Row
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.redAccent),
+              )
+            : Column(
                 children: [
-                  // Platform filter dropdown
-                  Expanded(
-                    // Added Expanded to ensure proper sizing
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Platform',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  // Filter controls
+                  Container(
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.shade200,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                      ],
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Platform filter dropdown
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            isExpanded: true, // Make dropdown use full width
+                            decoration: InputDecoration(
+                              labelText: 'Platform',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            value: _selectedPlatform ?? 'All Platforms',
+                            items: _availablePlatforms.map((platform) {
+                              return DropdownMenuItem(
+                                value: platform,
+                                child: Text(
+                                  platform,
+                                  overflow: TextOverflow
+                                      .ellipsis, // Handle text overflow
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedPlatform = value == 'All Platforms'
+                                    ? null
+                                    : value;
+                              });
+                            },
+                          ),
                         ),
-                      ),
-                      value: _selectedPlatform ?? 'All Platforms',
-                      items: _availablePlatforms.map((platform) {
-                        return DropdownMenuItem(
-                          value: platform,
-                          child: Text(platform),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedPlatform = value == 'All Platforms'
-                              ? null
-                              : value;
-                        });
-                      },
+                        const SizedBox(width: 12),
+                        // Stall type filter dropdown
+                        Expanded(
+                          // Added Expanded to ensure proper sizing
+                          child: DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: 'Stall Type',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            value: _selectedStallType ?? 'All Types',
+                            items: _stallTypes.map((type) {
+                              return DropdownMenuItem(
+                                value: type,
+                                child: Text(type),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedStallType = value == 'All Types'
+                                    ? null
+                                    : value;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12), // Changed from height to width
-                  // Stall type filter dropdown
-                  Expanded(
-                    // Added Expanded to ensure proper sizing
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Stall Type',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
-                      value: _selectedStallType ?? 'All Types',
-                      items: _stallTypes.map((type) {
-                        return DropdownMenuItem(value: type, child: Text(type));
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedStallType = value == 'All Types'
-                              ? null
-                              : value;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            // Stall List
-            Expanded(
-              child: groupedStalls.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No food stalls available for this selection',
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Summary card - use widget.stationName
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            child: Row(
+                  // Stall List
+                  Expanded(
+                    child: groupedStalls.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.amber.shade50,
-                                    borderRadius: BorderRadius.circular(8),
+                                const Icon(
+                                  Icons.no_food,
+                                  color: Colors.grey,
+                                  size: 64,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No food stalls available at ${widget.stationName}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey,
                                   ),
-                                  child: Icon(
-                                    Icons.restaurant_menu,
-                                    color: Colors.amber.shade700,
-                                    size: 28,
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 12),
+                                if (_errorMessage.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 32,
+                                    ),
+                                    child: Text(
+                                      _errorMessage,
+                                      style: const TextStyle(
+                                        color: Colors.redAccent,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: _fetchFoodStalls,
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text("Refresh Data"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.redAccent,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                              ],
+                            ),
+                          )
+                        : SingleChildScrollView(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Summary card - use widget.stationName
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 20),
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        '${widget.stationName} Station Food Stalls',
-                                        style: const TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.redAccent,
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.amber.shade50,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.restaurant_menu,
+                                          color: Colors.amber.shade700,
+                                          size: 28,
                                         ),
                                       ),
-                                      const SizedBox(height: 1),
-                                      Text(
-                                        '${filteredStalls.length} stalls available',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.redAccent.shade100,
-                                          fontWeight: FontWeight.w400,
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${widget.stationName} Station Food Stalls',
+                                              style: const TextStyle(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.redAccent,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 1),
+                                            Text(
+                                              '${filteredStalls.length} stalls available',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color:
+                                                    Colors.redAccent.shade100,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
+
+                                // Display stalls grouped by platform
+                                ...groupedStalls.entries.map(
+                                  (entry) => _buildPlatformSection(
+                                    entry.key,
+                                    entry.value,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+                                _buildInfoNote(),
                               ],
                             ),
                           ),
-
-                          // Display stalls grouped by platform
-                          ...groupedStalls.entries.map(
-                            (entry) =>
-                                _buildPlatformSection(entry.key, entry.value),
-                          ),
-
-                          const SizedBox(height: 12),
-                          _buildInfoNote(),
-                        ],
-                      ),
-                    ),
-            ),
-          ],
-        ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -1247,6 +719,12 @@ class _FoodServicesState extends State<FoodServices> {
   }
 
   Widget _buildStallItem(FoodStall stall) {
+    // Map station ID to name for display if needed
+    String displayStation = stall.station;
+    if (_stationIdToName.containsKey(stall.station)) {
+      displayStation = _stationIdToName[stall.station]!;
+    }
+
     return ListTile(
       title: Text(
         'Stall ${stall.stallNumber.isEmpty ? 'Unnamed' : '#' + stall.stallNumber}',
@@ -1268,6 +746,12 @@ class _FoodServicesState extends State<FoodServices> {
   }
 
   void _showStallDetails(FoodStall stall) {
+    // Map station ID to name for display if needed
+    String displayStation = stall.station;
+    if (_stationIdToName.containsKey(stall.station)) {
+      displayStation = _stationIdToName[stall.station]!;
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1289,8 +773,15 @@ class _FoodServicesState extends State<FoodServices> {
           children: [
             _buildDetailRow('Type', stall.stallType),
             _buildDetailRow('Platform', stall.platformNumber),
-            _buildDetailRow('Station', stall.station),
-            _buildDetailRow('Division', stall.division),
+            // Removed Station and Division rows
+            _buildDetailRow('Licensee', stall.licenseeName),
+            _buildDetailRow(
+              'Phone',
+              stall.contactNumber,
+              isPhone: true,
+            ), // Added phone field with call capability
+            _buildDetailRow('Contract Start', stall.contractStartDate),
+            _buildDetailRow('Contract End', stall.contractEndDate),
           ],
         ),
         actions: [
@@ -1303,7 +794,7 @@ class _FoodServicesState extends State<FoodServices> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String value, {bool isPhone = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -1320,10 +811,33 @@ class _FoodServicesState extends State<FoodServices> {
             ),
           ),
           Expanded(
-            child: Text(
-              value.isEmpty ? 'N/A' : value,
-              style: const TextStyle(fontSize: 16),
-            ),
+            child: isPhone && value.isNotEmpty
+                ? InkWell(
+                    onTap: () async {
+                      final Uri phoneUri = Uri(scheme: 'tel', path: value);
+                      if (await canLaunchUrl(phoneUri)) {
+                        await launchUrl(phoneUri);
+                      }
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          value,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.call, size: 16, color: Colors.blue),
+                      ],
+                    ),
+                  )
+                : Text(
+                    value.isEmpty ? 'N/A' : value,
+                    style: const TextStyle(fontSize: 16),
+                  ),
           ),
         ],
       ),

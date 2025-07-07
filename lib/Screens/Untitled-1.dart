@@ -37,8 +37,30 @@ class _LoginPageState extends State<LoginPage> {
         navigateToMainScreen();
       },
       verificationFailed: (FirebaseAuthException e) {
+        String errorMessage = 'Verification failed.';
+
+        // Provide more specific error messages based on the error code
+        if (e.code == 'too-many-requests') {
+          errorMessage =
+              'Too many attempts. Your device is temporarily blocked. Please try again after some time (usually 1-2 hours).';
+        } else if (e.code == 'invalid-phone-number') {
+          errorMessage =
+              'The phone number format is incorrect. Please check and try again.';
+        } else if (e.code == 'quota-exceeded') {
+          errorMessage =
+              'Service temporarily unavailable. Please try again later.';
+        } else if (e.code == 'captcha-check-failed') {
+          errorMessage = 'Captcha verification failed. Please try again.';
+        } else {
+          errorMessage = 'Verification failed. ${e.message}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Verification failed. ${e.message}')),
+          SnackBar(
+            content: Text(errorMessage),
+            duration: Duration(seconds: 5),
+            backgroundColor: Colors.redAccent,
+          ),
         );
         setState(() => isLoading = false);
       },
@@ -58,6 +80,13 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> verifyOTP() async {
+    if (otpController.text.trim().length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a valid 6-digit OTP')),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
     try {
       final credential = PhoneAuthProvider.credential(
@@ -67,9 +96,25 @@ class _LoginPageState extends State<LoginPage> {
       await FirebaseAuth.instance.signInWithCredential(credential);
       navigateToMainScreen();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Invalid OTP. Try again.')));
+      String errorMessage = 'Invalid OTP. Try again.';
+
+      if (e is FirebaseAuthException) {
+        if (e.code == 'too-many-requests') {
+          errorMessage =
+              'Too many failed attempts. Your device is temporarily blocked. Please try again after some time (usually 1-2 hours).';
+        } else if (e.code == 'invalid-verification-code') {
+          errorMessage =
+              'The verification code is invalid. Please check and try again.';
+        }
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          duration: Duration(seconds: 5),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       setState(() => isLoading = false);
     }
   }
